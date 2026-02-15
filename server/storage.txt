@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 ..\assets\images\temp\test92.png: 135303252: 135303252: 20800000
 ..\assets\images\temp\test246.png: 96742: 96742: 171000
 ..\assets\images\temp\test21.png: 342: 342: 90
@@ -20,3 +21,29 @@
 ..\assets\images\temp\test202.png: 256877: 256877: 2310000
 ..\assets\images\temp\test194.png: 6160: 6160: 371
 ..\assets\images\temp\test93.png: 744435: 744435: 3170000
+=======
+..\assets\images\temp\test270.png: 17146984: 17146984: 759000
+..\assets\images\temp\test215.png: 4038962: 4038962: 2690000
+..\assets\images\temp\test210.png: 7555: 7555: 6190
+..\assets\images\temp\test196.png: 11535: 11535: 40900
+..\assets\images\temp\test87.png: 2030854: 2030854: 1610000
+..\assets\images\temp\test132.png: 2068009: 2068009: 9390000
+..\assets\images\temp\test179.png: 132324983: 132324983: 52800000
+..\assets\images\temp\test222.png: 16: 16: 10
+..\assets\images\temp\test292.png: 2938: 2938: 707
+..\assets\images\temp\test216.png: 13849653: 13849653: 3600000
+..\assets\images\temp\test226.png: 8085: 8085: 298
+..\assets\images\temp\test99.png: 666246: 666246: 1220000
+..\assets\images\temp\test224.png: 5281384: 5281384: 4830000
+..\assets\images\temp\test91.png: 444: 444: 246
+..\assets\images\temp\test43.png: 1372: 1372: 1720
+..\assets\images\temp\test197.png: 1563: 1563: 521
+..\assets\images\temp\test214.png: 189072: 189072: 148000
+..\assets\images\temp\test98.png: 1532853: 1532853: 1320000
+..\assets\images\temp\test136.png: 453456: 453456: 2030000
+..\assets\images\temp\test187.png: 1506423: 1506423: 2920000
+..\assets\images\temp\test82.png: 2910093: 2910093: 2660000
+..\assets\images\temp\test299.png: 23148287: 23148287: 44700000
+..\assets\images\temp\test154.png: 596: 596: 20
+..\assets\images\temp\test83.png: 3039926: 3039926: 104000
+>>>>>>> d875d95b04ba03058928a432a2cbbe75a5591448
