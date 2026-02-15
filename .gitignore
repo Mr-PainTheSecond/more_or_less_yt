@@ -361,3 +361,8 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# Auto-Change attr
+/server/storage.txt
+/server/test_pre.txt
+/assets/images/temp
