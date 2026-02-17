@@ -191,30 +191,59 @@ int drawTitle(int state) {
 
 /*Draws the screen which informs the user that they have
 won the game*/
-void drawWinScreen() {
-	static SDL_Texture* winBackground = NULL;
-	static SDL_Texture* pfpWin = NULL;
+void drawFinalScreen() {
+	static SDL_Texture* background = NULL;
+	static SDL_Texture* pfp = NULL;
 	// A rect depicting the whole display
-	static TTF_Text* victoryTxt;
-	static TTF_Text* winnerTxt;
+	static TTF_Text* videoTxt;
+	static TTF_Text* stateTxt;
 	static TTF_Text* menuTxt;
 	static TTF_Text* quitTxt;
+	// Keep track of previous state to swap assets
+	static int previousState = 0;
 	int w = screen->w;
 	int h = screen->h;
-	if (winBackground == NULL) {
+	if (gameAttr->state == shutDown) {
+		if (background != NULL) {
+			SDL_DestroyTexture(background);
+			SDL_DestroyTexture(pfp);
+
+			TTF_DestroyText(videoTxt);
+			TTF_DestroyText(stateTxt);
+			TTF_DestroyText(menuTxt);
+			TTF_DestroyText(quitTxt);
+		}
+
+		return;
+	}
+
+	if (background == NULL) {
+		if (gameAttr->state == justWon || gameAttr->state == gameWon) {
+			char videoMsg[] = "Thumbs up crew CONGRAGULATES you";
+			char stateMsg[] = "WINNER!!!";
+
+			videoTxt = TTF_CreateText(textEngine, ytFont, videoMsg, strlen(videoMsg));
+			stateTxt = TTF_CreateText(textEngine, moreLessFont, stateMsg, strlen(stateMsg));
+		}
+		else {
+			char videoMsg[] = "Markiplier is disappointed (ASMR)";
+			char stateMsg[] = "GAME OVER";
+
+			videoTxt = TTF_CreateText(textEngine, ytFont, videoMsg, strlen(videoMsg));
+			stateTxt = TTF_CreateText(textEngine, moreLessFont, stateMsg, strlen(stateMsg));
+		}
 		SDL_Surface* winSurf = IMG_Load("..\\assets\\images\\perm\\other\\winner.JPG");
 		SDL_Surface* pfpSurf = IMG_Load("..\\assets\\images\\perm\\other\\winner_channel.PNG");
 
 		pfpSurf = transformToCircle(pfpSurf);
 
-		winBackground = SDL_CreateTextureFromSurface(renderer, winSurf);
-		pfpWin = SDL_CreateTextureFromSurface(renderer, pfpSurf);
+		background = SDL_CreateTextureFromSurface(renderer, winSurf);
+		pfp = SDL_CreateTextureFromSurface(renderer, pfpSurf);
 
-		char videoMsg[] = "Thumbs up crew CONGRAGULATES you";
-		char winnerMsg[] = "WINNER!!!";
+		// No need for thesed anymore
+		SDL_DestroySurface(winSurf);
+		SDL_DestroySurface(pfp);
 
-		victoryTxt = TTF_CreateText(textEngine, ytFont, videoMsg, strlen(videoMsg));
-		winnerTxt = TTF_CreateText(textEngine, moreLessFont, winnerMsg, strlen(winnerMsg));
 		menuTxt = TTF_CreateText(textEngine, smallFont, "MENU", strlen("MENU"));
 		quitTxt = TTF_CreateText(textEngine, smallFont, "QUIT", strlen("QUIT"));
 	}
@@ -234,11 +263,11 @@ void drawWinScreen() {
 	drawSmoothRectagle(menuRect, 100, 27, 0, menuRect.w / 6);
 	drawSmoothRectagle(quitRect, 100, 27, 0, menuRect.w / 6);
 
-	SDL_RenderTexture(renderer, winBackground, NULL, &winRect);
-	SDL_RenderTexture(renderer, pfpWin, NULL, &pfpRect);
+	SDL_RenderTexture(renderer, background, NULL, &winRect);
+	SDL_RenderTexture(renderer, pfp, NULL, &pfpRect);
 
-	displayText(videoTxtRect, victoryTxt, &x, &y);
-	displayText(announceRect, winnerTxt, &x, &y);
+	displayText(videoTxtRect, videoTxt, &x, &y);
+	displayText(announceRect, stateTxt, &x, &y);
 	displayText(quitRect, quitTxt, &x, &y);
 	displayText(menuRect, menuTxt, &x, &y);
 }
@@ -256,8 +285,8 @@ int draw(TTF_Text* more, TTF_Text* less, Queue* queue) {
 	else if (gameAttr->state >= normal && gameAttr->state <= justWon) {
 		gameAttr->state = drawMoreOrLess(more, less, queue);
 	}
-	else if (gameAttr->state == justWon || gameAttr->state == gameWon) {
-		drawWinScreen();
+	else if (gameAttr->state >= justLost && gameAttr->state <= gameWon) {
+		drawFinalScreen();
 	}
 	if (firstIter) {
 		SDL_ShowWindow(window);

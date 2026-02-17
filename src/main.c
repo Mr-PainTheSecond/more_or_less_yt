@@ -54,7 +54,6 @@ int moreOrLess(bool more, Queue* queue, int score, int* state) {
 
 
 			if (score + 1 >= WINNING_SCORE) {
-				printf("%s\n", "JUST WOONNN!!");
 				gameAttr->state = justWon;
 			}
 			else {
@@ -154,9 +153,9 @@ GameAttributes* initializeAttr(void) {
 		exit(1);
 	}
 
-	newAttr->difficulty = 0;
+	newAttr->difficulty = standard;
 	newAttr->health = 3;
-	newAttr->score = 19;
+	newAttr->score = 0;
 	// This should be title on non-debug versions
 	newAttr->state = DEFAULT_GAME_STATE;
 
@@ -204,7 +203,8 @@ void handleMouseClick(SDL_MouseButtonEvent button, bool* aboutToQuit, int* timeC
 			*timeClocked = clock();
 		}
 	}
-	else if (gameAttr->state == title || gameAttr->state == gameWon) {
+	// In these state, we have a quit button and a start button
+	else if (gameAttr->state == title || gameAttr->state == gameWon || gameAttr->state == gameOver) {
 		// Some weird ass coding
 		SDL_FRect gameQuit;
 		SDL_FRect gameTrans;

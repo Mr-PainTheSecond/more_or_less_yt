@@ -148,7 +148,7 @@ int drawMoreOrLess(TTF_Text* moreTxt, TTF_Text* lessTxt, Queue* queue) {
 	static int data;
 
 	// The state that will remove all the elements from here
-	if (gameAttr->state >= justQuit && gameAttr->state <= justWon) {
+	if (gameAttr->state >= justQuit && gameAttr->state <= justWon || gameAttr->state == shutDown) {
 		if (views != NULL) {
 			// We have to free/reset everything
 			destroyDynamicText(views);
@@ -180,11 +180,12 @@ int drawMoreOrLess(TTF_Text* moreTxt, TTF_Text* lessTxt, Queue* queue) {
 		nextTxt = NULL;
 		gameAttr->score = 0;
 		if (gameAttr->state == justWon) {
-			printf("%s\n", "Changed to won");
 			gameAttr->state = gameWon;
 		}
+		else if (gameAttr->state == justLost) {
+			gameAttr->state = gameOver;	
+		}
 		else {
-			printf("%s\n", "Changed to title");
 			gameAttr->state = title;
 		}
 		gameAttr->health = 3;
