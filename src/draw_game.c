@@ -10,7 +10,7 @@ int handleTextChange(DynamicText* views, DynamicText* txtScore, DynamicText* mys
 	// Reveals the view count during the transition phase.
 	if (gameAttr->score != lastScore) {
 		// The Score is incremented by one
-		if (gameAttr->score > 0) {
+		if (gameAttr->score >= 0) {
 			lastScore = gameAttr->score;
 		}
 		else {

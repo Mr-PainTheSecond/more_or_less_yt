@@ -189,6 +189,37 @@ int drawTitle(int state) {
 	return state;
 }
 
+int finalConditionProperties(TTF_Text** videoTxt, TTF_Text** stateTxt, SDL_Texture** background, SDL_Texture** pfp) {
+	SDL_Surface* winSurf;
+	SDL_Surface* pfpSurf;
+	if (gameAttr->state == justWon || gameAttr->state == gameWon) {
+		char videoMsg[] = "Thumbs up crew CONGRAGULATES you";
+		char stateMsg[] = "WINNER!!!";
+
+		*videoTxt = TTF_CreateText(textEngine, ytFont, videoMsg, strlen(videoMsg));
+		*stateTxt = TTF_CreateText(textEngine, moreLessFont, stateMsg, strlen(stateMsg));
+
+		winSurf = IMG_Load("..\\assets\\images\\perm\\other\\winner.JPG");
+		pfpSurf = IMG_Load("..\\assets\\images\\perm\\other\\winner_channel.PNG");
+	}
+	else {
+		char videoMsg[] = "Markiplier is disappointed (ASMR)";
+		char stateMsg[] = "GAME OVER";
+
+		*videoTxt = TTF_CreateText(textEngine, ytFont, videoMsg, strlen(videoMsg));
+		*stateTxt = TTF_CreateText(textEngine, moreLessFont, stateMsg, strlen(stateMsg));
+
+		winSurf = IMG_Load("..\\assets\\images\\perm\\other\\loser.JPG");
+		pfpSurf = IMG_Load("..\\assets\\images\\perm\\other\\loser_channel.PNG");
+	}
+
+	*background = SDL_CreateTextureFromSurface(renderer, winSurf);
+	*pfp = SDL_CreateTextureFromSurface(renderer, pfpSurf);
+
+	SDL_DestroySurface(winSurf);
+	SDL_DestroySurface(pfp);
+}
+
 /*Draws the screen which informs the user that they have
 won the game*/
 void drawFinalScreen() {
@@ -218,34 +249,23 @@ void drawFinalScreen() {
 	}
 
 	if (background == NULL) {
-		if (gameAttr->state == justWon || gameAttr->state == gameWon) {
-			char videoMsg[] = "Thumbs up crew CONGRAGULATES you";
-			char stateMsg[] = "WINNER!!!";
-
-			videoTxt = TTF_CreateText(textEngine, ytFont, videoMsg, strlen(videoMsg));
-			stateTxt = TTF_CreateText(textEngine, moreLessFont, stateMsg, strlen(stateMsg));
-		}
-		else {
-			char videoMsg[] = "Markiplier is disappointed (ASMR)";
-			char stateMsg[] = "GAME OVER";
-
-			videoTxt = TTF_CreateText(textEngine, ytFont, videoMsg, strlen(videoMsg));
-			stateTxt = TTF_CreateText(textEngine, moreLessFont, stateMsg, strlen(stateMsg));
-		}
-		SDL_Surface* winSurf = IMG_Load("..\\assets\\images\\perm\\other\\winner.JPG");
-		SDL_Surface* pfpSurf = IMG_Load("..\\assets\\images\\perm\\other\\winner_channel.PNG");
-
-		pfpSurf = transformToCircle(pfpSurf);
-
-		background = SDL_CreateTextureFromSurface(renderer, winSurf);
-		pfp = SDL_CreateTextureFromSurface(renderer, pfpSurf);
-
-		// No need for thesed anymore
-		SDL_DestroySurface(winSurf);
-		SDL_DestroySurface(pfp);
+		SDL_Surface* winSurf;
+		SDL_Surface* pfpSurf;
+		
+		finalConditionProperties(&videoTxt, &stateTxt, &background, &pfp);
 
 		menuTxt = TTF_CreateText(textEngine, smallFont, "MENU", strlen("MENU"));
 		quitTxt = TTF_CreateText(textEngine, smallFont, "QUIT", strlen("QUIT"));
+
+		// Saves so we can change it later
+		previousState = gameAttr->state;
+	}
+	
+	// This part of the game is initialzied, but we need new assets
+	if (gameAttr->state != previousState) {
+		finalConditionProperties(&videoTxt, &stateTxt, &background, &pfp);
+
+		previousState = gameAttr->state;
 	}
 
 	int x = 0;
@@ -282,10 +302,10 @@ int draw(TTF_Text* more, TTF_Text* less, Queue* queue) {
 		gameAttr->state = drawTitle(gameAttr->state);
 	}
 	// There is a LOT of states within the regular game logic
-	else if (gameAttr->state >= normal && gameAttr->state <= justWon) {
+	if (gameAttr->state >= normal && gameAttr->state <= justWon) {
 		gameAttr->state = drawMoreOrLess(more, less, queue);
 	}
-	else if (gameAttr->state >= justLost && gameAttr->state <= gameWon) {
+	if (gameAttr->state >= justLost && gameAttr->state <= gameWon) {
 		drawFinalScreen();
 	}
 	if (firstIter) {

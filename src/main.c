@@ -318,7 +318,7 @@ int main() {
 				if (event.key.key == SDLK_ESCAPE && (keysAllowed & escOn) != 0) {
 					keysAllowed = keysAllowed & disableEsc;
 					// States where the game is business as usual
-					if (gameAttr->state >= normal && gameAttr->state <= lessWrong) {
+					if (gameAttr->state >= normal && gameAttr->state <= gameWon) {
 						gameAttr->state = justQuit;
 					}
 					else if (gameAttr->state == title) {
