@@ -366,3 +366,6 @@ FodyWeavers.xsd
 /server/storage.txt
 /server/test_pre.txt
 /assets/images/temp/
+
+# We want the libs folder
+!libs/
