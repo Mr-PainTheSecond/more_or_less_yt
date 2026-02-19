@@ -1,0 +1,4 @@
+httplib2==0.22.0
+rich==14.0.0
+google-api-python-client==2.170.0
+yt_dlp==2025.10.22

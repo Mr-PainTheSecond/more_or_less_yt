@@ -1,17 +1,28 @@
-import sqlite3
-import globals
-from messages import Messages
-import random
-import threading
-import httplib2.error
+import subprocess
 import sys
-from rich import print
-import requests
-import utilities
-import html
-import yt_dlp as ytd
-import googleapiclient.discovery as google
 import os
+
+os.chdir("..\\server")
+try:
+    import sqlite3
+    import globals
+    from messages import Messages
+    import random
+    import threading
+    import httplib2.error
+    import sys
+    from rich import print
+    import requests
+    import utilities
+    import html
+    import yt_dlp as ytd
+    import googleapiclient.discovery as google
+except ImportError:
+    # Some requirement hasn't been made, install them
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "-r", "requirements.txt"])
+    # We are going to start over in a new instance
+    subprocess.call([sys.executable,  "main.py", "python"])
+    sys.exit(0)
 
 class YouTubeData():
     def __init__(self, firstIndex):
@@ -220,7 +231,6 @@ class YouTubeData():
         
 if __name__ == "__main__":
     global messageManager
-    os.chdir("..\\server")
     firstIndex = 0
     messageManager = Messages()
     # firstBatch = utilities.getStorageData("storage.txt")
