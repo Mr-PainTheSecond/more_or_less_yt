@@ -220,7 +220,7 @@ class YouTubeData():
         
 if __name__ == "__main__":
     global messageManager
-    os.chdir("C:\\Users\\santi\\source\\repos\\more_or_less_yt\\server")
+    os.chdir("..\\server")
     firstIndex = 0
     messageManager = Messages()
     # firstBatch = utilities.getStorageData("storage.txt")
