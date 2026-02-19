@@ -247,7 +247,6 @@ int drawMoreOrLess(TTF_Text* moreTxt, TTF_Text* lessTxt, Queue* queue) {
 		nextTxt = TTF_CreateText(textEngine, smallFont, "???", strlen("???") + 1);
 		int w, h;
 		TTF_GetTextSize(nextTxt, &w, &h);
-		printf("%d %d", w, h);
 	}
 
 

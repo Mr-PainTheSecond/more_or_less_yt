@@ -77,11 +77,10 @@ void storeYTData(Queue* queue,char* sData, int data, char* file_name, char* subC
 bool getYtData(zsock_t* connection, Queue* queue) {
 	char* data = zstr_recv(connection);
 	if (strcmp(data, "LOST") == 0) {
-		printf("Here");
 		fprintf(stderr, "%s\n", "CONNECTION LOST");
 		return false;
 	}
-	printf("%s\n", "Here");
+
 	while (strcmp(data, "-1") != 0) {
 		int intData = convertToInt(data);
 		zstr_send(connection, "Roger");
@@ -96,7 +95,6 @@ bool getYtData(zsock_t* connection, Queue* queue) {
 
 	YTNode* current = queue->front;
 	while (current != NULL) {
-		printf("%s\n", current->subs);
 		current = current->next;
 	}
 
@@ -104,11 +102,11 @@ bool getYtData(zsock_t* connection, Queue* queue) {
 }
 
 void startServer() {
-	char path[] = "C:\\Users\\santi\\source\\repos\\more_or_less_yt\\server";
+	char path[] = "..\\server";
 
 	if (access(path, 0) == 0) {
 		// Starts the database
-		system("start python.exe C:\\Users\\santi\\source\\repos\\more_or_less_yt\\server\\main.py");
+		system("start python.exe ..\\server\\main.py");
 		system("cls");
 	}
 	else {

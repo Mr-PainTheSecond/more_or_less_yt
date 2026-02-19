@@ -205,7 +205,6 @@ TTF_Font* createFont(char* file_name, float size) {
 		exit(-1);
 	}
 
-	printf("%f\n", size);
 	if (!TTF_SetFontSize(font, size)) {
 		fprintf(stderr, "%s\n", "Error with setting the font size");
 		quit(ytQueue);

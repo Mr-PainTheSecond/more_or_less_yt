@@ -22,7 +22,6 @@ int moreOrLess(bool more, Queue* queue, int score, int* state) {
 				
 			// buddy won!!!
 			if (score + 1 >= WINNING_SCORE) {
-				printf("%s\n", "JUST WOONNN!!");
 				gameAttr->state = justWon;
 			}
 			else {

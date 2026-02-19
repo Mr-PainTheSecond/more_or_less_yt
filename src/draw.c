@@ -189,6 +189,9 @@ int drawTitle(int state) {
 	return state;
 }
 
+/*Sets the properties which are unique depending if the player won or lost.
+Will run when the player first gets to end screen, and when their condition
+changes*/
 int finalConditionProperties(TTF_Text** videoTxt, TTF_Text** stateTxt, SDL_Texture** background, SDL_Texture** pfp) {
 	SDL_Surface* winSurf;
 	SDL_Surface* pfpSurf;
@@ -213,6 +216,8 @@ int finalConditionProperties(TTF_Text** videoTxt, TTF_Text** stateTxt, SDL_Textu
 		pfpSurf = IMG_Load("..\\assets\\images\\perm\\other\\loser_channel.PNG");
 	}
 
+	pfpSurf = transformToCircle(pfpSurf);
+
 	*background = SDL_CreateTextureFromSurface(renderer, winSurf);
 	*pfp = SDL_CreateTextureFromSurface(renderer, pfpSurf);
 
@@ -234,6 +239,7 @@ void drawFinalScreen() {
 	static int previousState = 0;
 	int w = screen->w;
 	int h = screen->h;
+	// The game is ending. Free all the assets and return
 	if (gameAttr->state == shutDown) {
 		if (background != NULL) {
 			SDL_DestroyTexture(background);
