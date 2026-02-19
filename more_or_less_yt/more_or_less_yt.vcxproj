@@ -95,13 +95,13 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>C:\Users\santi\source\repos\more_or_less_yt\include;C:\Users\santi\source\repos\more_or_less_yt\include\SDL3;$(IncludePath)</IncludePath>
+    <IncludePath>..\include;..\include\SDL3;$(IncludePath)</IncludePath>
     <ReferencePath>C:\Users\santi\source\repos\more_or_less_yt\libs\x64;$(ReferencePath)</ReferencePath>
-    <LibraryPath>C:\Users\santi\source\repos\more_or_less_yt\libs\x64;$(LibraryPath)</LibraryPath>
+    <LibraryPath>..\libs;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>C:\Users\santi\source\repos\more_or_less_yt\include\SDL3;C:\Users\santi\source\repos\more_or_less_yt\include;$(IncludePath)</IncludePath>
-    <LibraryPath>C:\Users\santi\source\repos\more_or_less_yt\libs\x64;$(LibraryPath)</LibraryPath>
+    <IncludePath>..\include\SDL3;..\include;$(IncludePath)</IncludePath>
+    <LibraryPath>..\libs;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
