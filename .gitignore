@@ -367,5 +367,8 @@ FodyWeavers.xsd
 /server/test_pre.txt
 /assets/images/temp/
 
+# Has our secrets 
+.env
+
 # We want the libs folder
 !libs/
