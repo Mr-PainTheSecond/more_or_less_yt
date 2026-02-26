@@ -36,7 +36,10 @@ class YouTubeData():
         self.filesNames = []
         self.viewCounts = []
         self.subCount = []
-        self.youtube = google.build("youtube", "v3", developerKey=os.getenv("YOUTUBE_API_KEY"))
+        # Have to get .env from the root folder
+        os.chdir("..\\")
+        self.youtube = google.build("youtube", "v3", developerKey=os.environ.get("YOUTUBE_API_KEY"))
+        os.chdir("server\\")
 
     def downloadThumbnail(self, url, count, index):
         thumnailUrl = self.getThumnbnailUrl(url, count, index)
