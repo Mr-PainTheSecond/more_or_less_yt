@@ -16,7 +16,7 @@ void drawCircle(int x, int y, float radius, SDL_Color color) {
 The size and location can be customized.*/
 void drawLogo(int x, int y, float size) {
 	SDL_FRect ytSymbol = createRect(x, y, size, size * 9 / 16, true);
-	drawSmoothRectagle(ytSymbol, ytRed.r, ytRed.g, ytRed.b, size / 8);
+	drawSmoothRectagle(ytSymbol, ytRed.r, ytRed.g, ytRed.b, SDL_ALPHA_OPAQUE, size / 8);
 	//displayText(ytSymbol, moreTxt, &x, &y);
 
 	SDL_Color white = { 255, 255, 255, SDL_ALPHA_OPAQUE };
@@ -111,10 +111,10 @@ SDL_Surface* setSurfGrayScale(SDL_Surface* surface) {
 }
 
 /*Draw a regtangle with the color parameters and a black border if border specified*/
-void drawRectangle(SDL_FRect* rect, int r, int g, int b, bool border) {
-	SDL_SetRenderDrawColor(renderer, r, g, b, SDL_ALPHA_OPAQUE);
+void drawRectangle(SDL_FRect* rect, int r, int g, int b, int a, bool border) {
+	SDL_SetRenderDrawColor(renderer, r, g, b, a);
 	SDL_RenderFillRect(renderer, rect);
-	SDL_SetRenderDrawColor(renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
+	SDL_SetRenderDrawColor(renderer, 0, 0, 0, a);
 	if (border) {
 		SDL_RenderRect(renderer, rect);
 	}
@@ -122,7 +122,7 @@ void drawRectangle(SDL_FRect* rect, int r, int g, int b, bool border) {
 
 /*Draws a rectangle with smooth edges. This isn't included within SDL, so
 it is a little bit of a more involved process.*/
-void drawSmoothRectagle(SDL_FRect rect, int r, int g, int b, float radius) {
+void drawSmoothRectagle(SDL_FRect rect, int r, int g, int b, int a, float radius) {
 	int segments = 2000;
 	int vertexes = (segments * 4 + 1) * 2;
 
@@ -183,7 +183,7 @@ void drawSmoothRectagle(SDL_FRect rect, int r, int g, int b, float radius) {
 	// We used the diameter a lot
 	float diameter = radius * 2;
 
-	SDL_SetRenderDrawColor(renderer, r, g, b, SDL_ALPHA_OPAQUE);
+	SDL_SetRenderDrawColor(renderer, r, g, b, a);
 	SDL_RenderPoints(renderer, vertices, index);
 	// Rendering the lines for the rectangle
 	// Top Left to Top Right
@@ -206,31 +206,31 @@ void drawSmoothRectagle(SDL_FRect rect, int r, int g, int b, float radius) {
 	rect.x += diameter;
 	rect.y += diameter;
 	// Draws the center Rectangles
-	drawRectangle(&rect, r, g, b, false);
+	drawRectangle(&rect, r, g, b, a, false);
 
 	// Draws four rectangles on the side
 	SDL_FRect topRect = createRect(vertices[segments].x + radius, vertices[1].y + radius,
 		rect.w, vertices[segments].y - rect.y, false);
 
-	drawRectangle(&topRect, r, g, b, false);
+	drawRectangle(&topRect, r, g, b, a, false);
 
 	SDL_FRect bottomRect = createRect(vertices[segments].x + radius, vertices[segments * 3].y,
 		rect.w, vertices[segments].y - rect.y, false);
 
-	drawRectangle(&bottomRect, r, g, b, false);
+	drawRectangle(&bottomRect, r, g, b, a, false);
 
 	SDL_FRect leftRect = createRect(vertices[1].x + diameter, vertices[1].y,
 		vertices[1].x - rect.x, rect.h + diameter, false);
 
-	drawRectangle(&leftRect, r, g, b, false);
+	drawRectangle(&leftRect, r, g, b, a, false);
 
 	SDL_FRect rightRect = createRect(vertices[segments * 2].x, vertices[1].y,
 		vertices[1].x - rect.x, rect.h + diameter, false);
 
-	drawRectangle(&rightRect, r, g, b, false);
+	drawRectangle(&rightRect, r, g, b, a, false);
 
 	// Draw messes up the renderer color
-	SDL_SetRenderDrawColor(renderer, r, g, b, SDL_ALPHA_OPAQUE);
+	SDL_SetRenderDrawColor(renderer, r, g, b, a);
 	index = 1;
 	for (int a = 0; a <= segments * 2; a++) {
 		SDL_RenderLine(renderer, vertices[index].x, vertices[index].y,

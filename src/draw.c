@@ -182,8 +182,8 @@ int drawTitle(int state) {
 	SDL_FRect startLogo = createRect(w / 2 - (w / 8), h * 7 / 8, w / 6, h / 6, true);
 	SDL_FRect quitLogo = createRect(w / 2 + (w / 8), h * 7 / 8, w / 6, h / 6, true);
 	// The Start and Quit Buttons
-	drawSmoothRectagle(startLogo, 100, 27, 0, startLogo.w / 6);
-	drawSmoothRectagle(quitLogo, 100, 27, 0, startLogo.w / 6);
+	drawSmoothRectagle(startLogo, 100, 27, 0, SDL_ALPHA_OPAQUE, startLogo.w / 6);
+	drawSmoothRectagle(quitLogo, 100, 27, 0, SDL_ALPHA_OPAQUE, startLogo.w / 6);
 	int x, y;
 	displayText(startLogo, startTxt, &x, &y);
 	displayText(quitLogo, quitTxt, &x, &y);
@@ -285,10 +285,10 @@ void drawFinalScreen() {
 	SDL_FRect quitRect = createRect(w * 7 / 8, h / 2 + (h / 6), w / 6, h / 6, true);
 	SDL_FRect menuRect = createRect(w * 7 / 8, h / 2 - (h / 6), w / 6, h / 6, true);
 
-	drawSmoothRectagle(announceRect, 21, 71, 52, 20.0f);
-	drawSmoothRectagle(videoTxtRect, 39, 39, 39, 30.0f);
-	drawSmoothRectagle(menuRect, 100, 27, 0, menuRect.w / 6);
-	drawSmoothRectagle(quitRect, 100, 27, 0, menuRect.w / 6);
+	drawSmoothRectagle(announceRect, 21, 71, 52, SDL_ALPHA_OPAQUE, 20.0f);
+	drawSmoothRectagle(videoTxtRect, 39, 39, 39, SDL_ALPHA_OPAQUE, 30.0f);
+	drawSmoothRectagle(menuRect, 100, 27, 0, SDL_ALPHA_OPAQUE, menuRect.w / 6);
+	drawSmoothRectagle(quitRect, 100, 27, 0, SDL_ALPHA_OPAQUE, menuRect.w / 6);
 
 	SDL_RenderTexture(renderer, background, NULL, &winRect);
 	SDL_RenderTexture(renderer, pfp, NULL, &pfpRect);

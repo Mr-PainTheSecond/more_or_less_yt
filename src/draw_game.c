@@ -310,25 +310,37 @@ int drawMoreOrLess(TTF_Text* moreTxt, TTF_Text* lessTxt, Queue* queue) {
 	float subRadius = 10.0f;
 
 	// Rectangular galaore
-	drawRectangle(&moreImg, 128, 128, 128, true);
-	drawRectangle(&lessImg, 0, 0, 0, true);
-	drawRectangle(&hiddenImg, 0, 0, 0, true);
+	drawRectangle(&moreImg, 128, 128, 128, SDL_ALPHA_OPAQUE, true);
+	drawRectangle(&lessImg, 0, 0, 0, SDL_ALPHA_OPAQUE, true);
+	drawRectangle(&hiddenImg, 0, 0, 0, SDL_ALPHA_OPAQUE, true);
 	drawLogo(w / 2, h / 16, w / 8);
 	// The Rectangle that says "More"
-	drawRectangle(&more, 0, 83, 10, true);
-	drawRectangle(&hiddenMore, 0, 83, 10, true);
+	drawRectangle(&more, 0, 83, 10, SDL_ALPHA_OPAQUE, true);
+	drawRectangle(&hiddenMore, 0, 83, 10, SDL_ALPHA_OPAQUE, true);
 	// The Rectangle that says "Less"
-	drawRectangle(&less, 8, 39, 245, true);
-	drawRectangle(&hiddenLess, 8, 39, 245, true);
-	drawRectangle(&mysteryRect, 0, 0, 0, true);
-	drawRectangle(&hiddenRect, 0, 0, 0, true);
+	drawRectangle(&less, 8, 39, 245, SDL_ALPHA_OPAQUE, true);
+	drawRectangle(&hiddenLess, 8, 39, 245, SDL_ALPHA_OPAQUE, true);
+	drawRectangle(&mysteryRect, 0, 0, 0, SDL_ALPHA_OPAQUE, true);
+	drawRectangle(&hiddenRect, 0, 0, 0, SDL_ALPHA_OPAQUE, true);
 	// The subs are hidden in any difficulty after standard
+
+	int alphaLevel;
+	// Subs are hidden after standard
 	if (difficulty == standard) {
-		drawSmoothRectagle(subRect, subColor.r, subColor.g, subColor.b, subRadius);
-		drawSmoothRectagle(subMysRect, subColor.r, subColor.g, subColor.b, subRadius);
-		drawSmoothRectagle(subHideRect, subColor.r, subColor.g, subColor.b, subRadius);
+		SDL_Color subColor = { 39, 39, 39, SDL_ALPHA_OPAQUE };
+		drawSmoothRectagle(subRect, subColor.r, subColor.g, subColor.b, subColor.a, subRadius);
+		drawSmoothRectagle(subMysRect, subColor.r, subColor.g, subColor.b, subColor.a, subRadius);
+		drawSmoothRectagle(subHideRect, subColor.r, subColor.g, subColor.b, subColor.a, subRadius);
+	}
+	else {
+		SDL_Color subColor = { 128, 0, 32, SDL_ALPHA_OPAQUE };
+		drawSmoothRectagle(subRect, subColor.r, subColor.g, subColor.b, subColor.a, subRadius);
+		drawSmoothRectagle(subMysRect, subColor.r, subColor.g, subColor.b, subColor.a, subRadius);
+		drawSmoothRectagle(subHideRect, subColor.r, subColor.g, subColor.b, subColor.a, subRadius);
 	}
 
+
+	SDL_SetRenderDrawColor(renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
 	SDL_RenderFillRect(renderer, &viewRect);
 	SDL_SetRenderDrawColor(renderer, 197, 179, 88, SDL_ALPHA_OPAQUE);
 	SDL_RenderFillRect(renderer, &scoreRect);
