@@ -1,5 +1,7 @@
 #include "utilities.h"
 
+/*Takes a string representation of an integer,
+returns its integer represenation*/
 int convertToInt(char* sInt) {
 	int sIntSize = strlen(sInt);
 	int finalInt = 0;
@@ -129,6 +131,8 @@ char** readAndSplit(const char* fileName, char delimeter, int* size) {
 	return words;
 }
 
+/*Checks if the queue is running low, 
+and if it is, it will ask the server for more data.*/
 int expandQueue(zsock_t* requester, Queue* queue, int counter) {
 	counter++;
 	if (queue->size <= 4) {
@@ -215,6 +219,8 @@ void deleteQueue(Queue* queue) {
 	free(queue);
 }
 
+/*Creates a deep copy of the srcTxt DynamicTxt
+into the dstTxt*/
 void copyDymTxt(DynamicText* dstTxt, DynamicText* srcTxt) {
 	free(dstTxt->str);
 
@@ -233,6 +239,7 @@ void copyDymTxt(DynamicText* dstTxt, DynamicText* srcTxt) {
 	dstTxt->text = TTF_CreateText(textEngine, TTF_GetTextFont(srcTxt->text), dstTxt->str, strlen(dstTxt->str));
 }
 
+/*Quits/Frees all global variables, stops the server*/
 void quit(Queue* queue) {
 	zstr_send(requester, "STOP");
 	zsock_destroy(&requester);

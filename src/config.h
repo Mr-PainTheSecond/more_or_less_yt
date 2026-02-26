@@ -9,9 +9,8 @@
 // If a specific seed needs testing, this will do the job
 #define RSEED time(NULL)
 
-// Should be used just for debugging
-#define SHOW_CONSOLE 1
-
+// Turns ons all debug features. OFF for release.
+#define DEBUG 1
 
 // The width the windows will start at (if not fullscreen)
 #define DEFAULT_WIDTH 1080
@@ -32,11 +31,13 @@
 #define VIDEO_COUNT 10
 
 // How fast does the transition phase last
-#define TRANSITION_GUESS_SPEED 300
+#define TRANSITION_GUESS_SPEED 200
 
 // The state which the game starts at
 #define DEFAULT_GAME_STATE title
 
+// The difficulty which the game starts at.
+#define DEFAULT_DIFFICULTY standard
 // The minimum score needed to win
 #define WINNING_SCORE 20
 

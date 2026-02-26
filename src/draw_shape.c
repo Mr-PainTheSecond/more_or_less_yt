@@ -93,9 +93,12 @@ SDL_Surface* setSurfGrayScale(SDL_Surface* surface) {
 	int index = 0;
 	for (int y = 0; y < correctForm->h; y++) {
 		for (int x = 0; x < correctForm->w; x++) {
-			SDL_GetRGBA(surfPixels[index], details, surfPalette, &red, &blue, &green, &alpha);
-			// People perceive certain color more strongly than other, we will weight them accordingly
-			uint32_t grayScale = ((red * 0.2126) + (blue * 0.7152) + (green * 0.0722)) / 3;
+			SDL_GetRGBA(surfPixels[index], details, surfPalette, &red, &green, &blue, &alpha);
+			
+			int minInter = min(red, blue);
+			int min = min(minInter, green);
+			// Each pixel will be the minimum between each rgb value. 
+			uint32_t grayScale = min;
 
 			surfPixels[index] = SDL_MapRGBA(details, surfPalette, grayScale, grayScale, grayScale, alpha);
 

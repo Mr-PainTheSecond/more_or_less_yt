@@ -152,23 +152,31 @@ GameAttributes* initializeAttr(void) {
 		exit(1);
 	}
 
-	newAttr->difficulty = standard;
 	newAttr->health = 3;
 	newAttr->score = 0;
 	// This should be title on non-debug versions
 	newAttr->state = DEFAULT_GAME_STATE;
+
+	newAttr->frameByFrame = false;
 
 	return newAttr;
 }
 
 /*When the program detects a screen change, we need to make sure to update
 everything so that the UI remains relatively the same (it should be dynamic)*/
-void updateScreen(TTF_Font** moreLessFont) {
+void updateScreen(TTF_Font** moreLessFont, bool fullScreen) {
+	// For when the display used is changed
 	SDL_DisplayID newId = SDL_GetDisplayForWindow(window);
 	SDL_DisplayMode* display = SDL_GetCurrentDisplayMode(newId);
+	if (fullScreen) {
+		screen->w = display->w;
+		screen->h = display->h;
+	}
+	else {
+		SDL_GetWindowSize(window, &(screen->w), &(screen->h));
+		screen->id = SDL_GetDisplayForWindow(window);
+	}
 	// Changes the screen width/height (everthing changes with it)
-	screen->w = display->w;
-	screen->h = display->h;
 	screen->id = newId;
 
 	SDL_DestroySurface(screen->surface);
@@ -236,7 +244,7 @@ void handleMouseClick(SDL_MouseButtonEvent button, bool* aboutToQuit, int* timeC
 
 int main() {
 	// Should be off for normal behavior
-	if (!SHOW_CONSOLE) {
+	if (DEBUG) {
 		hideConsole();
 	}
 	SDL_Init_All();
@@ -245,6 +253,7 @@ int main() {
 	// Will set gameRunning to false after one loop
 	bool aboutToQuit = false;
 
+	bool fullScreen = FULLSCREEN;
 	startServer();
 	requester =  establishConnection();
 	ytQueue = createQueue();
@@ -272,7 +281,8 @@ int main() {
 	ytRed.g = 0;
 	ytRed.b = 51;
 	ytRed.a = SDL_ALPHA_OPAQUE;
-	difficulty = standard;
+	// Standard unless debugging
+	difficulty = DEFAULT_DIFFICULTY;
 	if (moreText == NULL || lessText == NULL) {
 		printf(SDL_GetError());
 		quit(ytQueue);
@@ -285,25 +295,21 @@ int main() {
 
 	int counter = 0;
 	bool canClick = true;
+
+	// Frame by Frame debugging variables
+	bool nextFrame = false;
+	int frameCount = 0;
 	// First Bit: W is allowed; Second Bit: S is allowed;
 	// Added as need be.
 	int keysAllowed = 7;
 	while (gameRunning) {
+
 		// DON'T PUT NON EVENT SHIT INSIDE EVENT LOOP
 		clock_t currentTime = clock();
 		if (currentTime - timeClocked >= 100) {
 			canClick = true;
 		}
 
-		gameAttr->state = draw(moreText, lessText, ytQueue);
-
-		if (gameAttr->score < 0) {
-			gameAttr->score = 0;
-		}
-
-		if (aboutToQuit) {
-			gameRunning = false;
-		}
 
 		while (SDL_PollEvent(&event)) {
 			if (event.type == SDL_EVENT_QUIT) {
@@ -351,6 +357,44 @@ int main() {
 						gameAttr->state = normal;
 					}
 				}
+
+				// We shouldn't need keysAllowed for this
+				else if (event.key.key == SDLK_F11) {
+					if (fullScreen) {
+						SDL_SetWindowFullscreen(window, false);
+					}
+					else {
+						SDL_SetWindowFullscreen(window, true);
+					}
+
+					// Changes size regardless
+					fullScreen = !fullScreen;
+					updateScreen(&moreLessFont, fullScreen);
+				}
+
+				else if (event.key.key == SDLK_F1 && DEBUG) {
+					gameAttr->frameByFrame = !gameAttr->frameByFrame;
+					frameCount = 0;
+				}
+
+				else if (gameAttr->frameByFrame && event.key.key == SDLK_F2) {
+					nextFrame = true;
+				}
+
+				// Decrease difficulty
+				else if (DEBUG && event.key.key == SDLK_F6) {
+					gameAttr->state = justQuit;
+
+					difficulty = (difficulty - 1) % 7;
+				}
+
+				// Increases difficulty
+				else if (DEBUG && event.key.key == SDLK_F7) {
+					gameAttr->state = justQuit;
+
+					difficulty = (difficulty + 1) % 7;
+				}
+				
 			}
 			
 			if (event.type == SDL_EVENT_MOUSE_BUTTON_DOWN && canClick) {
@@ -374,18 +418,35 @@ int main() {
 				}
 			}
 		}
-		
-		clock_t finishTime = clock();
-		// Enforce the FPS
-		while (finishTime - currentTime < 3) {
-			finishTime = clock();
+
+		// Handle frame by frame debugging 
+		if (gameAttr->frameByFrame) {
+			if (!nextFrame) {
+				continue;
+			}
+			else {
+				nextFrame = false;
+				printf("%d\n", frameCount);
+				frameCount++;
+			}
 		}
+		
+		gameAttr->state = draw(moreText, lessText, ytQueue);
+
+		if (gameAttr->score < 0) {
+			gameAttr->score = 0;
+		}
+
+		if (aboutToQuit) {
+			gameRunning = false;
+		}
+
 
 		SDL_DisplayID id = SDL_GetDisplayForWindow(window);
 		// The screen has changed
 		if (id != screen->id) {
 			
-			updateScreen(&moreLessFont);
+			updateScreen(&moreLessFont, fullScreen);
 			more = createRect(screen->w / 2, screen->h / 2, screen->w / 4, screen->h / 8, true);
 			less = createRect(screen->w / 2, screen->h * 5 / 8, screen->w / 4, screen->h / 8, true);
 		}
@@ -399,6 +460,12 @@ int main() {
 		if (counter == -1) {
 			printf("%s\n", "Weird Counter");
 			gameRunning = false;
+		}
+
+		clock_t finishTime = clock();
+		// Enforce the FPS
+		while (finishTime - currentTime < 3) {
+			finishTime = clock();
 		}
 	}
 	quit(ytQueue);

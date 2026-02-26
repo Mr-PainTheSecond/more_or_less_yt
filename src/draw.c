@@ -60,7 +60,7 @@ int drawTitle(int state) {
 	static TTF_Font* startTxt = NULL;
 	static TTF_Font* quitTxt = NULL;
 	static float xPos[VIDEO_COUNT];
-	static int w, h = 0;
+	int w, h = 0;
 	int imgCount = 1;
 	int filesNum = 0;
 	static char** files;
@@ -99,9 +99,10 @@ int drawTitle(int state) {
 
 		// Good way to signal that they are not initialized
 		xPos[0] = INT_MAX;
-		w = screen->w;
-		h = screen->h;
 	}
+
+	w = screen->w;
+	h = screen->h;
 
 	// The transition from title to main game.
 	// Destroys all the assets in the meanwhile

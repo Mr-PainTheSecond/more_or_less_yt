@@ -289,6 +289,7 @@ int drawMoreOrLess(TTF_Text* moreTxt, TTF_Text* lessTxt, Queue* queue) {
 
 	if (gameAttr->state != normal) {
 		delX -= (center(w * 3 / 4, moreImg.w) - center(viewRect.x, viewRect.w)) / TRANSITION_GUESS_SPEED;
+		//printf("%f\n", delX);
 		/*These rectangles reach their destination before the animation
 		is over. Importtant to remove their offfset.*/
 		if (hiddenRect.x <= mysteryRect.x - delX) {
@@ -321,9 +322,13 @@ int drawMoreOrLess(TTF_Text* moreTxt, TTF_Text* lessTxt, Queue* queue) {
 	drawRectangle(&hiddenLess, 8, 39, 245, true);
 	drawRectangle(&mysteryRect, 0, 0, 0, true);
 	drawRectangle(&hiddenRect, 0, 0, 0, true);
-	drawSmoothRectagle(subRect, subColor.r, subColor.g, subColor.b, subRadius);
-	drawSmoothRectagle(subMysRect, subColor.r, subColor.g, subColor.b, subRadius);
-	drawSmoothRectagle(subHideRect, subColor.r, subColor.g, subColor.b, subRadius);
+	// The subs are hidden in any difficulty after standard
+	if (difficulty == standard) {
+		drawSmoothRectagle(subRect, subColor.r, subColor.g, subColor.b, subRadius);
+		drawSmoothRectagle(subMysRect, subColor.r, subColor.g, subColor.b, subRadius);
+		drawSmoothRectagle(subHideRect, subColor.r, subColor.g, subColor.b, subRadius);
+	}
+
 	SDL_RenderFillRect(renderer, &viewRect);
 	SDL_SetRenderDrawColor(renderer, 197, 179, 88, SDL_ALPHA_OPAQUE);
 	SDL_RenderFillRect(renderer, &scoreRect);
@@ -343,9 +348,12 @@ int drawMoreOrLess(TTF_Text* moreTxt, TTF_Text* lessTxt, Queue* queue) {
 	displayText(mysteryRect, mysteryText->text, &x, &y);
 	displayText(hiddenRect, nextTxt, &x, &y);
 
-	displayText(subRect, subsTxts[0]->text, &x, &y); // Known
-	displayText(subMysRect, subsTxts[1]->text, &x, &y); // Mystery
-	displayText(subHideRect, subsTxts[2]->text, &x, &y); // Hidden
+
+	if (difficulty == standard) {
+		displayText(subRect, subsTxts[0]->text, &x, &y); // Known
+		displayText(subMysRect, subsTxts[1]->text, &x, &y); // Mystery
+		displayText(subHideRect, subsTxts[2]->text, &x, &y); // Hidden
+	}
 
 	// Text Color section: Set txt color depending on gameState
 	if (gameAttr->state == lessWrong || gameAttr->state == moreWrong) {
@@ -388,6 +396,9 @@ int drawMoreOrLess(TTF_Text* moreTxt, TTF_Text* lessTxt, Queue* queue) {
 		SDL_RenderTexture(renderer, hiddenNext->img, NULL, &hiddenImg);
 	}
 
+	/*if (gameAttr->state != normal) {
+		printf("%d\n", (int)hiddenRect.x);
+	}*/
 	// The Rectangle with ??? is in the right spot. Once this animation,
 	// The game is ready to move on to the next state
 	if (gameAttr->state != normal && (int)hiddenRect.x == center(w * 3 / 4, hiddenRect.w)) {

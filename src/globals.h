@@ -31,9 +31,9 @@ typedef struct ytNode {
 
 typedef struct gameAttributes {
 	int score;
-	int difficulty;
 	int health;
 	int state;
+	bool frameByFrame;
 } GameAttributes;
 
 typedef struct dText {
