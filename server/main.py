@@ -11,6 +11,7 @@ try:
     import threading
     import httplib2.error
     import sys
+    from dotenv import load_dotenv
     from rich import print
     import requests
     import utilities
@@ -38,7 +39,10 @@ class YouTubeData():
         self.subCount = []
         # Have to get .env from the root folder
         os.chdir("..\\")
-        self.youtube = google.build("youtube", "v3", developerKey=os.environ.get("YOUTUBE_API_KEY"))
+
+        # Loads our env file
+        load_dotenv()
+        self.youtube = google.build("youtube", "v3", developerKey=os.getenv("YOUTUBE_API"))
         os.chdir("server\\")
 
     def downloadThumbnail(self, url, count, index):
