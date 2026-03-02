@@ -21,7 +21,11 @@
 // Change the small font size
 #define SMALL_FONT_SIZE 80
 
+// Font size for More/Less
 #define MORE_LESS_SIZE 160
+
+// Font size for timer
+#define TIMER_SIZE 240
 
 // This is the width the screen has to be such that the font size is exactly the fonts in the macros
 // (makes the font size dynamic)
@@ -40,6 +44,12 @@
 #define DEFAULT_DIFFICULTY standard
 // The minimum score needed to win
 #define WINNING_SCORE 20
+
+// Timer for timer <= difficulty < harshTimer.
+#define STARTING_TIME 35
+
+// Increased time per question right (non-HarshTimer)
+#define TIMER_INCREMENT 1
 
 #endif // !CONFIG_H_
 

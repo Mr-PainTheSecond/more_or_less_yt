@@ -11,6 +11,8 @@ void deQueue(Queue* queue, YTNode* next);
 
 int convertToInt(char* sInt);
 
+char* converToStr(int num);
+
 int expandQueue(zsock_t* requester, Queue* queue, int counter);
 
 Queue* createQueue();

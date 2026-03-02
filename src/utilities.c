@@ -15,6 +15,35 @@ int convertToInt(char* sInt) {
 	return finalInt;
 }
 
+/*Takes an integer, and returns its string*/
+char* converToStr(int num) {
+	int numDigits;
+
+	// Can't take log10 of 0 :(
+	if (num == 0) {
+		numDigits = 1;
+	}
+	else {
+		numDigits = (int)log10(num) + 1;
+	}
+	char* sInt = malloc(sizeof(char) * (numDigits + 1));
+
+	if (sInt == NULL) {
+		fprintf(stderr, "%s\n", "Allocation for string int failed");
+		quit(ytQueue);
+		exit(1);
+	}
+
+	for (int a = numDigits - 1; a >= 0; a--) {
+		int digit = num % 10;
+		sInt[a] = (char)(digit + 48);
+		num /= 10;
+	}
+
+	sInt[numDigits] = '\0';
+	return sInt;
+}
+
 /*Takes a string array, and returns a random element from that 
 array*/
 char* choiceStr(char** array, int size) {
@@ -249,5 +278,6 @@ void quit(Queue* queue) {
 	deleteQueue(queue);
 	SDL_DestroyWindow(window);
 	SDL_DestroyRenderer(renderer);
+	TTF_DestroyGPUTextEngine(textEngine);
 	SDL_Quit();
 }

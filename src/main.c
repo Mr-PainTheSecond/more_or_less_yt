@@ -26,6 +26,7 @@ int moreOrLess(bool more, Queue* queue, int score, int* state) {
 			}
 			else {
 				gameAttr->state = moreRight;
+				gameAttr->timer += TIMER_INCREMENT;
 			}
 
 			return score + 1;
@@ -57,6 +58,7 @@ int moreOrLess(bool more, Queue* queue, int score, int* state) {
 			}
 			else {
 				gameAttr->state = lessRight;
+				gameAttr->timer += TIMER_INCREMENT;
 			}
 
 			return score + 1;
@@ -158,6 +160,8 @@ GameAttributes* initializeAttr(void) {
 	newAttr->state = DEFAULT_GAME_STATE;
 
 	newAttr->frameByFrame = false;
+	// Signals it is not relevent rn
+	newAttr->timer = STARTING_TIME;
 
 	return newAttr;
 }
@@ -272,6 +276,7 @@ int main() {
 	smallFont = createFont("../assets/font/stentiga.TTF", (SMALL_FONT_SIZE * ((float)screen->w / FONT_OFFSET)));
 	moreLessFont = createFont("../assets/font/stentiga.TTF", (MORE_LESS_SIZE * ((float)screen->w / FONT_OFFSET)));
 	ytFont = createFont("../assets/font/Roboto-Black.TTF", (SMALL_FONT_SIZE * ((float)screen->w / FONT_OFFSET)));
+	timerFont = createFont("../assets/font/DS-DIGIB.TTF", (TIMER_SIZE * ((float)screen->w / FONT_OFFSET)));
 	SDL_FRect more = createRect(screen->w / 2, screen->h / 2, screen->w / 4, screen->h / 8, true);
 	SDL_FRect less = createRect(screen->w / 2, screen->h * 5 / 8, screen->w / 4, screen->h / 8, true);
 	TTF_Text* moreText = TTF_CreateText(textEngine, moreLessFont, "More", strlen("More") + 1);
@@ -460,6 +465,11 @@ int main() {
 		if (counter == -1) {
 			printf("%s\n", "Weird Counter");
 			gameRunning = false;
+		}
+
+		if (gameAttr->timer <= 0) {
+			gameAttr->state = justLost;
+			gameAttr->timer = STARTING_TIME;
 		}
 
 		clock_t finishTime = clock();

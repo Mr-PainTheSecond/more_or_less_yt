@@ -168,7 +168,7 @@ class YouTubeData():
         self.connection = sqlite3.connect("youtube.db")
         self.cursor = self.connection.cursor()
         a = 0
-        for i in range(20):
+        for i in range(30):
             self.handleCategory()
             if globals.args == "view_test":
                 try:
@@ -241,6 +241,8 @@ if __name__ == "__main__":
     firstIndex = 0
     messageManager = Messages()
     # firstBatch = utilities.getStorageData("storage.txt")
+    
+    # For running in debug modes
     try:
         globals.args = sys.argv[1]
     except IndexError:
