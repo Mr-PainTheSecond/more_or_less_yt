@@ -208,14 +208,14 @@ void deQueue(Queue* queue, YTNode* next) {
 	if (queue->front == NULL || queue->front->next == NULL) {
 		zstr_send(requester, "STOP");
 		zsock_destroy(&requester);
-		fprintf(stderr, "%s\n", "FUCKKK");
+		fprintf(stderr, "%s\n", "FUCKKK our first/second queue elements are messed up lol");
 		exit(1);
 	}
 	YTNode* buffer = queue->front->next;
 	if (buffer->next == NULL) {
 		zstr_send(requester, "STOP");
 		zsock_destroy(&requester);
-		fprintf(stderr, "%s\n", "FUCKKK");
+		fprintf(stderr, "%s\n", "FUCKKK our third queue element are messed up lol");
 		exit(1);
 
 	}

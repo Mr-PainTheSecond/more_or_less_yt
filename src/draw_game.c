@@ -272,7 +272,8 @@ int drawMoreOrLess(TTF_Text* moreTxt, TTF_Text* lessTxt, Queue* queue) {
 		startingTime = clock() - timeDifference;
 	}
 
-	if (difficulty >= timer && currentTime - startingTime >= 1000) {
+	// Decrements time every second. Don't during transitions. 
+	if (gameAttr->state == normal && difficulty >= timer && currentTime - startingTime >= 1000) {
 		time--;
 		gameAttr->timer = time;
 		

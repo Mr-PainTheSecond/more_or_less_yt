@@ -42,14 +42,18 @@
 
 // The difficulty which the game starts at.
 #define DEFAULT_DIFFICULTY standard
+
 // The minimum score needed to win
 #define WINNING_SCORE 20
 
 // Timer for timer <= difficulty < harshTimer.
-#define STARTING_TIME 35
+#define STARTING_TIME 45
 
 // Increased time per question right (non-HarshTimer)
-#define TIMER_INCREMENT 1
+#define TIMER_INCREMENT 2
+
+// Debug feature: Immune to losing lives. (not to time out)
+#define LIFE_IMMUNITY 0
 
 #endif // !CONFIG_H_
 

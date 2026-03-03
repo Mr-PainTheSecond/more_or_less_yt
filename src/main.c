@@ -37,7 +37,9 @@ int moreOrLess(bool more, Queue* queue, int score, int* state) {
 			}
 
 			gameAttr->state = moreWrong;
-			gameAttr->health--;
+			if (!gameAttr->lifeImmunity) {
+				gameAttr->health--;
+			}
 
 			if (gameAttr->health <= 0) {
 				gameAttr->state = justLost;
@@ -69,7 +71,9 @@ int moreOrLess(bool more, Queue* queue, int score, int* state) {
 			}
 
 			gameAttr->state = lessWrong;
-			gameAttr->health--;
+			if (!gameAttr->lifeImmunity) {
+				gameAttr->health--;
+			}
 
 			if (gameAttr->health <= 0) {
 				gameAttr->state = justLost;
@@ -163,6 +167,7 @@ GameAttributes* initializeAttr(void) {
 	// Signals it is not relevent rn
 	newAttr->timer = STARTING_TIME;
 
+	newAttr->lifeImmunity = LIFE_IMMUNITY;
 	return newAttr;
 }
 
@@ -398,6 +403,11 @@ int main() {
 					gameAttr->state = justQuit;
 
 					difficulty = (difficulty + 1) % 7;
+				}
+
+				// Turn on/off life immunity
+				else if (DEBUG && event.key.key == SDLK_F3) {
+					gameAttr->lifeImmunity = !gameAttr->lifeImmunity;
 				}
 				
 			}

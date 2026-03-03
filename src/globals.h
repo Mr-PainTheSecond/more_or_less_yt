@@ -34,7 +34,9 @@ typedef struct gameAttributes {
 	int timer;
 	int health;
 	int state;
+	// Debug exclusive variables
 	bool frameByFrame;
+	int lifeImmunity;
 } GameAttributes;
 
 typedef struct dText {
