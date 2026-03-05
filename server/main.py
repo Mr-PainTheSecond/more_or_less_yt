@@ -191,19 +191,36 @@ class YouTubeData():
                 print(self.urls[j] + " " + self.viewCounts[j])
             self.threads.append(newThread)
         
-        network = threading.Thread(None, messageManager.findConnection, args = (usedIndexes, )) 
+        network = threading.Thread(None, messageManager.findConnection, args = (usedIndexes, ))
+        backupNetwork = threading.Thread(None, messageManager.findConnection, args = (usedIndexes, True,  )) 
+        
+       
+        globals.downloadComplete = False
         
         for thread in self.threads:
             thread.start()
         
+        # Starts the main server
         if globals.args != "fill":
             network.start()
+            
+        if globals.args != "fill":
+            network.join()    
+        
+        # Once the main server is done, we will do backup
+        if globals.args != "fill":
+            backupNetwork.start() 
         
         for thread in self.threads:
             thread.join()
         
+        # This will make backup quit next iteration
+        with self.lock:
+            globals.downloadComplete = True
+        
         if globals.args != "fill":
-            network.join()
+            backupNetwork.join()     
+        
 
 
         print("[green]Cycle complete")

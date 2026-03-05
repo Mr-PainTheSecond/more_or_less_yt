@@ -217,8 +217,9 @@ void deQueue(Queue* queue, YTNode* next) {
 		zsock_destroy(&requester);
 		fprintf(stderr, "%s\n", "FUCKKK our third queue element are messed up lol");
 		exit(1);
-
 	}
+
+	//continueGame(requester);
 	queue->size--;
 }
 
@@ -271,7 +272,6 @@ void copyDymTxt(DynamicText* dstTxt, DynamicText* srcTxt) {
 /*Quits/Frees all global variables, stops the server*/
 void quit(Queue* queue) {
 	zstr_send(requester, "STOP");
-	zsock_destroy(&requester);
 	SDL_DestroySurface(screen->surface);
 	free(screen);
 	freeFontArray();
@@ -280,4 +280,12 @@ void quit(Queue* queue) {
 	SDL_DestroyRenderer(renderer);
 	TTF_DestroyGPUTextEngine(textEngine);
 	SDL_Quit();
+
+	// We need to shutdown backup too.
+	if (strcmp(zstr_recv(requester), "ONE_MORE") == 0) {
+		zstr_send(requester, "STOP");
+		zstr_recv(requester);
+	}
+
+	zsock_destroy(&requester);
 }

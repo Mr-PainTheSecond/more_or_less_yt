@@ -44,7 +44,7 @@
 #define DEFAULT_DIFFICULTY standard
 
 // The minimum score needed to win
-#define WINNING_SCORE 20
+#define WINNING_SCORE 2000
 
 // Timer for timer <= difficulty < harshTimer.
 #define STARTING_TIME 45
@@ -53,7 +53,7 @@
 #define TIMER_INCREMENT 2
 
 // Debug feature: Immune to losing lives. (not to time out)
-#define LIFE_IMMUNITY 0
+#define LIFE_IMMUNITY 1
 
 #endif // !CONFIG_H_
 
