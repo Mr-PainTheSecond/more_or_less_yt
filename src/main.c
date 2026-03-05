@@ -44,6 +44,22 @@ int moreOrLess(bool more, Queue* queue, int score, int* state) {
 			if (gameAttr->health <= 0) {
 				gameAttr->state = justLost;
 			}
+
+			// Can't have negative score.
+			if (difficulty >= pointDeduct) {
+				int deductedScore = score - POINT_DEDUCT_AMOUNT;
+
+				// Signals score will stay the same
+				if (score == 0) {
+					return INT_MIN;
+				}
+				
+				if (deductedScore < 0) {
+					return 0;
+				}
+
+				return score - POINT_DEDUCT_AMOUNT;
+			}
 			
 			return INT_MIN;
 		}
@@ -77,6 +93,21 @@ int moreOrLess(bool more, Queue* queue, int score, int* state) {
 
 			if (gameAttr->health <= 0) {
 				gameAttr->state = justLost;
+			}
+
+			if (difficulty >= pointDeduct) {
+				int deductedScore = score - POINT_DEDUCT_AMOUNT;
+
+				// Signals score will stay the same
+				if (score == 0) {
+					return INT_MIN;
+				}
+
+				if (deductedScore < 0) {
+					return 0;
+				}
+
+				return deductedScore;
 			}
 
 			return INT_MIN;

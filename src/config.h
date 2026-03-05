@@ -52,6 +52,9 @@
 // Increased time per question right (non-HarshTimer)
 #define TIMER_INCREMENT 2
 
+// Points deducted for difficulty >= pointDeduct
+#define POINT_DEDUCT_AMOUNT 2
+
 // Debug feature: Immune to losing lives. (not to time out)
 #define LIFE_IMMUNITY 0
 
