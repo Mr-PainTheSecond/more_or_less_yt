@@ -377,7 +377,7 @@ int main() {
 		
 		clock_t finishTime = clock();
 		// Enforce the FPS
-		while (finishTime - currentTime < 3) {
+		while (finishTime - currentTime < frameRateinMs(FRAME_RATE)) {
 			finishTime = clock();
 		}
 

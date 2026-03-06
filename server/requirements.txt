@@ -3,3 +3,4 @@ rich==14.0.0
 google-api-python-client==2.170.0
 yt_dlp==2025.10.22
 dotenv==0.9.9
+zmq==0.0.0

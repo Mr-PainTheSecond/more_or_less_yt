@@ -13,6 +13,8 @@
 #define SHOW_CONSOLE 1
 
 
+#define FRAME_RATE 60
+
 // The width the windows will start at (if not fullscreen)
 #define DEFAULT_WIDTH 1080
 
@@ -32,7 +34,7 @@
 #define VIDEO_COUNT 10
 
 // How fast does the transition phase last
-#define TRANSITION_GUESS_SPEED 300
+#define TRANSITION_GUESS_SPEED 150
 
 // The state which the game starts at
 #define DEFAULT_GAME_STATE title

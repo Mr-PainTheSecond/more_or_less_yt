@@ -13,6 +13,12 @@ int convertToInt(char* sInt) {
 	return finalInt;
 }
 
+/*Given the frame rate, returns how
+many ms are in one frame*/
+time_t frameRateinMs(int frameRate) {
+	return 1000 / frameRate;
+}
+
 /*Takes a string array, and returns a random element from that 
 array*/
 char* choiceStr(char** array, int size) {

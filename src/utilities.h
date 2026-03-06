@@ -25,6 +25,8 @@ char* choiceStr(char** array, int size);
 
 void copyDymTxt(DynamicText* dstTxt, DynamicText* srcTxt);
 
+time_t frameRateinMs(int frameRate);
+
 void quit(Queue* queue);
 
 #endif // !UTILITIES_H_
