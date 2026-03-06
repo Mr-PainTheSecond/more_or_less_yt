@@ -15,6 +15,12 @@ int convertToInt(char* sInt) {
 	return finalInt;
 }
 
+/*Given the frame rate, returns how
+many ms are in one frame*/
+time_t frameRateinMs(int frameRate) {
+	return 1000 / frameRate;
+}
+
 /*Takes an integer, and returns its string*/
 char* converToStr(int num) {
 	int numDigits;

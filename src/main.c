@@ -477,6 +477,12 @@ int main() {
 			}
 		}
 		
+		clock_t finishTime = clock();
+		// Enforce the FPS
+		while (finishTime - currentTime < frameRateinMs(FRAME_RATE)) {
+			finishTime = clock();
+    }
+    
 		gameAttr->state = draw(moreText, lessText, ytQueue);
 
 		if (gameAttr->score < 0) {
