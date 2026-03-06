@@ -10,7 +10,7 @@
 #define RSEED time(NULL)
 
 // Turns ons all debug features. OFF for release.
-#define DEBUG 1
+#define DEBUG 0
 
 #define FRAME_RATE 60
 
