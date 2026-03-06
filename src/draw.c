@@ -41,7 +41,7 @@ float handleXPos(float* xPos, float w, float* h) {
 	// If not, we offset.
 	else {
 		for (int a = 0; a < VIDEO_COUNT; a++) {
-			xPos[a]--;
+			xPos[a]-= 2;
 			if (xPos[a] + (rectW / 2) < 0) {
 				// This is the right most position the rect can be
 				xPos[a] = w / 4 + (w / 2 * (VIDEO_COUNT / 2 - 1));
