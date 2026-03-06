@@ -185,6 +185,12 @@ DynamicText* createDynamicText(const char* str, TTF_Font* font) {
 
 	strcpy(dText->str, str);
 	dText->text = TTF_CreateText(textEngine, font, str, strlen(str));
+
+	if (dText->text == NULL) {
+		fprintf(stderr, "%s\n", SDL_GetError());
+		quit(ytQueue);
+		exit(1);
+	}
 	return dText;
 }
 

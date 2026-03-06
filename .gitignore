@@ -372,3 +372,7 @@ FodyWeavers.xsd
 
 # We want the libs folder
 !libs/
+
+# IGNORES ENVSS!!!
+.env
+!.env.example

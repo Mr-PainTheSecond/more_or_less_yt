@@ -37,7 +37,6 @@ def writeData(fileName, data, index):
             entrySeperate = currentData.split("\n")
 
                
-        
     with open(fileName, "w") as file:
         file.write(currentData)    
 

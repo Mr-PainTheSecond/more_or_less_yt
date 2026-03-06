@@ -31,9 +31,12 @@ typedef struct ytNode {
 
 typedef struct gameAttributes {
 	int score;
-	int difficulty;
+	int timer;
 	int health;
 	int state;
+	// Debug exclusive variables
+	bool frameByFrame;
+	int lifeImmunity;
 } GameAttributes;
 
 typedef struct dText {
@@ -58,6 +61,7 @@ SDL_Color ytRed;
 Fonts* fontArray;
 TTF_Font* smallFont;
 TTF_Font* moreLessFont;
+TTF_Font* timerFont;
 TTF_Font* ytFont;
 int difficulty;
 TTF_TextEngine* textEngine;

@@ -1,5 +1,7 @@
 #include "utilities.h"
 
+/*Takes a string representation of an integer,
+returns its integer represenation*/
 int convertToInt(char* sInt) {
 	int sIntSize = strlen(sInt);
 	int finalInt = 0;
@@ -17,6 +19,35 @@ int convertToInt(char* sInt) {
 many ms are in one frame*/
 time_t frameRateinMs(int frameRate) {
 	return 1000 / frameRate;
+}
+
+/*Takes an integer, and returns its string*/
+char* converToStr(int num) {
+	int numDigits;
+
+	// Can't take log10 of 0 :(
+	if (num == 0) {
+		numDigits = 1;
+	}
+	else {
+		numDigits = (int)log10(num) + 1;
+	}
+	char* sInt = malloc(sizeof(char) * (numDigits + 1));
+
+	if (sInt == NULL) {
+		fprintf(stderr, "%s\n", "Allocation for string int failed");
+		quit(ytQueue);
+		exit(1);
+	}
+
+	for (int a = numDigits - 1; a >= 0; a--) {
+		int digit = num % 10;
+		sInt[a] = (char)(digit + 48);
+		num /= 10;
+	}
+
+	sInt[numDigits] = '\0';
+	return sInt;
 }
 
 /*Takes a string array, and returns a random element from that 
@@ -135,6 +166,8 @@ char** readAndSplit(const char* fileName, char delimeter, int* size) {
 	return words;
 }
 
+/*Checks if the queue is running low, 
+and if it is, it will ask the server for more data.*/
 int expandQueue(zsock_t* requester, Queue* queue, int counter) {
 	counter++;
 	if (queue->size <= 4) {
@@ -181,14 +214,14 @@ void deQueue(Queue* queue, YTNode* next) {
 	if (queue->front == NULL || queue->front->next == NULL) {
 		zstr_send(requester, "STOP");
 		zsock_destroy(&requester);
-		fprintf(stderr, "%s\n", "FUCKKK");
+		fprintf(stderr, "%s\n", "FUCKKK our first/second queue elements are messed up lol");
 		exit(1);
 	}
 	YTNode* buffer = queue->front->next;
 	if (buffer->next == NULL) {
 		zstr_send(requester, "STOP");
 		zsock_destroy(&requester);
-		fprintf(stderr, "%s\n", "FUCKKK");
+		fprintf(stderr, "%s\n", "FUCKKK our third queue element are messed up lol");
 		exit(1);
 
 	}
@@ -221,6 +254,8 @@ void deleteQueue(Queue* queue) {
 	free(queue);
 }
 
+/*Creates a deep copy of the srcTxt DynamicTxt
+into the dstTxt*/
 void copyDymTxt(DynamicText* dstTxt, DynamicText* srcTxt) {
 	free(dstTxt->str);
 
@@ -239,6 +274,7 @@ void copyDymTxt(DynamicText* dstTxt, DynamicText* srcTxt) {
 	dstTxt->text = TTF_CreateText(textEngine, TTF_GetTextFont(srcTxt->text), dstTxt->str, strlen(dstTxt->str));
 }
 
+/*Quits/Frees all global variables, stops the server*/
 void quit(Queue* queue) {
 	zstr_send(requester, "STOP");
 	zsock_destroy(&requester);
@@ -248,5 +284,6 @@ void quit(Queue* queue) {
 	deleteQueue(queue);
 	SDL_DestroyWindow(window);
 	SDL_DestroyRenderer(renderer);
+	TTF_DestroyGPUTextEngine(textEngine);
 	SDL_Quit();
 }

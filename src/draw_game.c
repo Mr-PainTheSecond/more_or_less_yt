@@ -135,17 +135,24 @@ int drawMoreOrLess(TTF_Text* moreTxt, TTF_Text* lessTxt, Queue* queue) {
 	static DynamicText* views = NULL;
 	static DynamicText* txtScore = NULL;
 	static DynamicText* mysteryText = NULL;
+	static DynamicText* timerTxt;
 	static TTF_Text* nextTxt = NULL;
 	static DynamicText** subsTxts = NULL;
 	static SDL_Texture* mrBeastHeart = NULL;
 	static SDL_Texture* deadBeast = NULL;
+	static SDL_Texture* timerPfp = NULL;
+	static time_t startingTime;
 	// The array of positions of Mr. Beast
 	static SDL_FRect* mrBeastPos = NULL;
 	static int heartCount;
 	// The offset for screen transition
 	static float delX = 0;
+	static int time = STARTING_TIME;
+	static int timeDifference = 0;
 	static float delY = -1;
 	static int data;
+
+
 
 	// The state that will remove all the elements from here
 	if (gameAttr->state >= justQuit && gameAttr->state <= justWon || gameAttr->state == shutDown) {
@@ -154,6 +161,7 @@ int drawMoreOrLess(TTF_Text* moreTxt, TTF_Text* lessTxt, Queue* queue) {
 			destroyDynamicText(views);
 			destroyDynamicText(txtScore);
 			destroyDynamicText(mysteryText);
+			destroyDynamicText(timerTxt);
 
 			for (int a = 0; a < 3; a++) {
 				destroyDynamicText(subsTxts[a]);
@@ -165,6 +173,8 @@ int drawMoreOrLess(TTF_Text* moreTxt, TTF_Text* lessTxt, Queue* queue) {
 			// RIP to the beasts
 			SDL_DestroyTexture(mrBeastHeart);
 			SDL_DestroyTexture(deadBeast);
+			
+			SDL_DestroyTexture(timerPfp);
 
 			TTF_DestroyText(nextTxt);
 			delX = 0;
@@ -173,12 +183,16 @@ int drawMoreOrLess(TTF_Text* moreTxt, TTF_Text* lessTxt, Queue* queue) {
 			deQueue(ytQueue, ytQueue->front->next);
 			deQueue(ytQueue, ytQueue->front->next);
 
+			startingTime = clock();
 		}
 
 		// Signifies that we will need to remake everything
 		views = NULL;
 		nextTxt = NULL;
+		// Reset everything to default values
 		gameAttr->score = 0;
+		time = STARTING_TIME;
+		gameAttr->timer = STARTING_TIME;
 		if (gameAttr->state == justWon) {
 			gameAttr->state = gameWon;
 		}
@@ -197,6 +211,10 @@ int drawMoreOrLess(TTF_Text* moreTxt, TTF_Text* lessTxt, Queue* queue) {
 		views = createDynamicText("", NULL);
 		txtScore = createDynamicText("", NULL);
 		mysteryText = createDynamicText("", NULL);
+		// This can be fully initilized here
+		timerTxt = createDynamicText(converToStr(time), timerFont);
+
+		TTF_SetTextColor(timerTxt->text, 255, 0, 0, SDL_ALPHA_OPAQUE);
 		subsTxts = malloc(sizeof(DynamicText*) * 3);
 
 		if (subsTxts == NULL) {
@@ -219,6 +237,11 @@ int drawMoreOrLess(TTF_Text* moreTxt, TTF_Text* lessTxt, Queue* queue) {
 		deadBeast = SDL_CreateTextureFromSurface(renderer, beastSurf);
 		SDL_DestroySurface(beastSurf);
 
+		// Our funny little pfp
+		SDL_Surface* timePfpSurf = IMG_Load("..\\assets\\images\\perm\\other\\timer_pfp.JPG");
+		timePfpSurf = transformToCircle(timePfpSurf);
+		timerPfp = SDL_CreateTextureFromSurface(renderer, timePfpSurf);
+
 		// Later difficulties remove one heart.
 		if (difficulty >= lessHeart) {
 			mrBeastPos = malloc(sizeof(SDL_FRect) * 2);
@@ -234,6 +257,40 @@ int drawMoreOrLess(TTF_Text* moreTxt, TTF_Text* lessTxt, Queue* queue) {
 			quit(ytQueue);
 			exit(1);
 		}
+	}
+	
+	time = gameAttr->timer;
+	time_t currentTime = clock();
+
+	if (gameAttr->state != normal && delX == 0) {
+		timeDifference = currentTime - startingTime;
+	}
+
+	if (gameAttr->state != normal) {
+		// Pause timer during transition
+		// Keeps same time interval
+		startingTime = clock() - timeDifference;
+	}
+
+	// Decrements time every second. Don't during transitions. 
+	if (gameAttr->state == normal && difficulty >= timer && currentTime - startingTime >= 1000) {
+		time--;
+		gameAttr->timer = time;
+		
+		if (time <= 0) {
+			time = 0;
+		}
+
+		free(timerTxt->str);
+		TTF_DestroyText(timerTxt->text);
+
+		timerTxt->str = converToStr(time);
+		timerTxt->text = TTF_CreateText(textEngine, timerFont, timerTxt->str, strlen(timerTxt->str));
+
+		TTF_SetTextColor(timerTxt->text, 255, 0, 0, SDL_ALPHA_OPAQUE);
+
+		// Reset time elapsed for next second
+		startingTime = clock();
 	}
 
 	if (gameAttr->state == normal && delX != 0) {
@@ -276,6 +333,10 @@ int drawMoreOrLess(TTF_Text* moreTxt, TTF_Text* lessTxt, Queue* queue) {
 
 	SDL_FRect scoreRect = createRect(w / 24, h * 23 / 24, w / 12, h / 12, true);
 
+	int timeWidth, timeHeight;
+	TTF_GetTextSize(timerTxt->text, &timeWidth, &timeHeight);
+	SDL_FRect timerRect = createRect(w / 2, h / 4, w / 8, h / 8, true);
+
 	for (int a = 0; a < heartCount; a++) {
 		float beastX = w / 2 + ((w / 12) * (a - 1));
 		mrBeastPos[a] = createRect(beastX, h * 23 / 24, w / 12, h / 12, true);
@@ -289,6 +350,7 @@ int drawMoreOrLess(TTF_Text* moreTxt, TTF_Text* lessTxt, Queue* queue) {
 
 	if (gameAttr->state != normal) {
 		delX -= (center(w * 3 / 4, moreImg.w) - center(viewRect.x, viewRect.w)) / TRANSITION_GUESS_SPEED;
+		//printf("%f\n", delX);
 		/*These rectangles reach their destination before the animation
 		is over. Importtant to remove their offfset.*/
 		if (hiddenRect.x <= mysteryRect.x - delX) {
@@ -309,21 +371,38 @@ int drawMoreOrLess(TTF_Text* moreTxt, TTF_Text* lessTxt, Queue* queue) {
 	float subRadius = 10.0f;
 
 	// Rectangular galaore
-	drawRectangle(&moreImg, 128, 128, 128, true);
-	drawRectangle(&lessImg, 0, 0, 0, true);
-	drawRectangle(&hiddenImg, 0, 0, 0, true);
+	drawRectangle(&moreImg, 128, 128, 128, SDL_ALPHA_OPAQUE, true);
+	drawRectangle(&lessImg, 0, 0, 0, SDL_ALPHA_OPAQUE, true);
+	drawRectangle(&hiddenImg, 0, 0, 0, SDL_ALPHA_OPAQUE, true);
 	drawLogo(w / 2, h / 16, w / 8);
 	// The Rectangle that says "More"
-	drawRectangle(&more, 0, 83, 10, true);
-	drawRectangle(&hiddenMore, 0, 83, 10, true);
+	drawRectangle(&more, 0, 83, 10, SDL_ALPHA_OPAQUE, true);
+	drawRectangle(&hiddenMore, 0, 83, 10, SDL_ALPHA_OPAQUE, true);
 	// The Rectangle that says "Less"
-	drawRectangle(&less, 8, 39, 245, true);
-	drawRectangle(&hiddenLess, 8, 39, 245, true);
-	drawRectangle(&mysteryRect, 0, 0, 0, true);
-	drawRectangle(&hiddenRect, 0, 0, 0, true);
-	drawSmoothRectagle(subRect, subColor.r, subColor.g, subColor.b, subRadius);
-	drawSmoothRectagle(subMysRect, subColor.r, subColor.g, subColor.b, subRadius);
-	drawSmoothRectagle(subHideRect, subColor.r, subColor.g, subColor.b, subRadius);
+	drawRectangle(&less, 8, 39, 245, SDL_ALPHA_OPAQUE, true);
+	drawRectangle(&hiddenLess, 8, 39, 245, SDL_ALPHA_OPAQUE, true);
+	drawRectangle(&mysteryRect, 0, 0, 0, SDL_ALPHA_OPAQUE, true);
+	drawRectangle(&hiddenRect, 0, 0, 0, SDL_ALPHA_OPAQUE, true);
+
+
+
+	int alphaLevel;
+	// Subs are hidden after standard
+	if (difficulty == standard) {
+		SDL_Color subColor = { 39, 39, 39, SDL_ALPHA_OPAQUE };
+		drawSmoothRectagle(subRect, subColor.r, subColor.g, subColor.b, subColor.a, subRadius);
+		drawSmoothRectagle(subMysRect, subColor.r, subColor.g, subColor.b, subColor.a, subRadius);
+		drawSmoothRectagle(subHideRect, subColor.r, subColor.g, subColor.b, subColor.a, subRadius);
+	}
+	else {
+		SDL_Color subColor = { 128, 0, 32, SDL_ALPHA_OPAQUE };
+		drawSmoothRectagle(subRect, subColor.r, subColor.g, subColor.b, subColor.a, subRadius);
+		drawSmoothRectagle(subMysRect, subColor.r, subColor.g, subColor.b, subColor.a, subRadius);
+		drawSmoothRectagle(subHideRect, subColor.r, subColor.g, subColor.b, subColor.a, subRadius);
+	}
+
+
+	SDL_SetRenderDrawColor(renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
 	SDL_RenderFillRect(renderer, &viewRect);
 	SDL_SetRenderDrawColor(renderer, 197, 179, 88, SDL_ALPHA_OPAQUE);
 	SDL_RenderFillRect(renderer, &scoreRect);
@@ -343,9 +422,17 @@ int drawMoreOrLess(TTF_Text* moreTxt, TTF_Text* lessTxt, Queue* queue) {
 	displayText(mysteryRect, mysteryText->text, &x, &y);
 	displayText(hiddenRect, nextTxt, &x, &y);
 
-	displayText(subRect, subsTxts[0]->text, &x, &y); // Known
-	displayText(subMysRect, subsTxts[1]->text, &x, &y); // Mystery
-	displayText(subHideRect, subsTxts[2]->text, &x, &y); // Hidden
+	// Timer is going off!!!
+	if (difficulty >= timer) {
+		SDL_RenderTexture(renderer, timerPfp, NULL, &timerRect);
+		displayText(timerRect, timerTxt->text, &x, &y);
+	}
+
+	if (difficulty == standard) {
+		displayText(subRect, subsTxts[0]->text, &x, &y); // Known
+		displayText(subMysRect, subsTxts[1]->text, &x, &y); // Mystery
+		displayText(subHideRect, subsTxts[2]->text, &x, &y); // Hidden
+	}
 
 	// Text Color section: Set txt color depending on gameState
 	if (gameAttr->state == lessWrong || gameAttr->state == moreWrong) {
@@ -388,6 +475,9 @@ int drawMoreOrLess(TTF_Text* moreTxt, TTF_Text* lessTxt, Queue* queue) {
 		SDL_RenderTexture(renderer, hiddenNext->img, NULL, &hiddenImg);
 	}
 
+	/*if (gameAttr->state != normal) {
+		printf("%d\n", (int)hiddenRect.x);
+	}*/
 	// The Rectangle with ??? is in the right spot. Once this animation,
 	// The game is ready to move on to the next state
 	if (gameAttr->state != normal && (int)hiddenRect.x == center(w * 3 / 4, hiddenRect.w)) {
