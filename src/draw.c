@@ -9,12 +9,14 @@ float handleXPos(float* xPos, float w, float* h) {
 	// The screen has changed, we need to fix the positions
 	if (w != screen->w) {
 		// First, we removed the effect the screen width has on the positons
+		printf("hERELLO\n");
+
 		for (int a = 0; a < VIDEO_COUNT; a++) {
 			xPos[a] -= w / 4;
 		}
 
 		for (int a = 0; a < VIDEO_COUNT; a++) {
-			xPos[a] /= w / 2;
+			xPos[a] /= (w / 2);
 		}
 
 		// Correct the w/h variables
@@ -23,11 +25,12 @@ float handleXPos(float* xPos, float w, float* h) {
 
 		// We add back the effect
 		for (int a = 0; a < VIDEO_COUNT; a++) {
-			xPos[a] *= w / 2;
+			xPos[a] *= (w / 2);
 		}
 
 		for (int a = 0; a < VIDEO_COUNT; a++) {
 			xPos[a] += w / 4;
+			if (xPos[a] != a % (VIDEO_COUNT / 2)) printf("%f\n", xPos[a]);
 		}
 	}
 
@@ -60,7 +63,7 @@ int drawTitle(int state) {
 	static TTF_Font* startTxt = NULL;
 	static TTF_Font* quitTxt = NULL;
 	static float xPos[VIDEO_COUNT];
-	int w, h = 0;
+	static float w, h = 0;
 	int imgCount = 1;
 	int filesNum = 0;
 	static char** files;
@@ -99,10 +102,9 @@ int drawTitle(int state) {
 
 		// Good way to signal that they are not initialized
 		xPos[0] = INT_MAX;
+		w = screen->w;
+		h = screen->h;
 	}
-
-	w = screen->w;
-	h = screen->h;
 
 	// The transition from title to main game.
 	// Destroys all the assets in the meanwhile
