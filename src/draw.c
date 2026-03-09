@@ -308,17 +308,23 @@ int draw(TTF_Text* more, TTF_Text* less, Queue* queue) {
 	if (gameAttr->state == title  || gameAttr->state == shutDown) {
 		gameAttr->state = drawTitle(gameAttr->state);
 	}
+
+	if (gameAttr->state == shutDown) {
+		SDL_HideWindow(window);
+	}
+
 	// There is a LOT of states within the regular game logic
-	if (gameAttr->state >= normal && gameAttr->state <= justWon) {
+	if (gameAttr->state >= normal && gameAttr->state <= justWon || gameAttr->state == shutDown) {
 		gameAttr->state = drawMoreOrLess(more, less, queue);
 	}
-	if (gameAttr->state >= justLost && gameAttr->state <= gameWon) {
+	if (gameAttr->state >= justLost && gameAttr->state <= gameWon || gameAttr->state == shutDown) {
 		drawFinalScreen();
 	}
 	if (firstIter) {
 		SDL_ShowWindow(window);
 		firstIter = false;
 	}
+
 
 	SDL_RenderPresent(renderer);
 	return gameAttr->state;

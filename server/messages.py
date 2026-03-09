@@ -14,16 +14,51 @@ class Messages:
         self.path = "../assets/images/temp/"
         self.socket = self.context.socket(zmq.REP)
         self.socket.bind("tcp://*:5555")
+        # Time out after 5 seconds
+        self.socket.setsockopt(zmq.RCVTIMEO, 5000)
     
-    def findConnection(self, illegalIndex = []):
+    def findConnection(self, illegalIndex = [], backup = False):
+        # The download is complete when we got here
+        with lock:
+            if backup and globals.downloadComplete:
+                return
+        
         print("Trying to find connection...")
-        response = str(self.socket.recv())
+        print(backup)
+        
+        if backup:
+            print("[blue]This is the backup server")
+        else:
+            print("[orange]This is the main server")  
+        
+        while True:
+            try:
+                response = str(self.socket.recv())
+                break
+            # Designed so we can periodically check download status
+            except zmq.error.Again:
+                with lock:
+                    if backup and globals.downloadComplete:
+                        return
+        
+        
+              
         # This is how the messages are formatted
         if response == "b\'STOP\'":
             print("[red]Connection terminated")
-            self.socket.close()
+            if not backup:
+                # Request for the backup to stop too
+                self.socket.send_string("ONE_MORE")
+            else:
+                self.socket.send_string("DONE")
+                self.socket.close() 
             globals.serverRunning = False
             sys.exit(0)
+            
+        with lock:
+            if backup and not globals.downloadComplete:
+                self.socket.send_string("NOT_READY")
+                return
         print("[green]Established a connection")
         with lock:
             batch = utilities.getStorageData("storage.txt", illegalIndex)
