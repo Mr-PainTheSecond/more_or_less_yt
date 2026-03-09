@@ -74,8 +74,21 @@ void storeYTData(Queue* queue,char* sData, int data, char* file_name, char* subC
 	dataNode->next = NULL;
 }
 
+//void continueGame(zsock_t* connection) {
+//	zstr_send(connection, "CONTINUE");
+//	// Just for communication
+//	char* buffer = zstr_recv(connection);
+//}
+
 bool getYtData(zsock_t* connection, Queue* queue) {
 	char* data = zstr_recv(connection);
+
+	if (strcmp(data, "NOT_READY") == 0) {
+		printf("%s\n", "System works?");
+		quit(queue);
+		return false;
+	}
+
 	if (strcmp(data, "LOST") == 0) {
 		fprintf(stderr, "%s\n", "CONNECTION LOST");
 		return false;
