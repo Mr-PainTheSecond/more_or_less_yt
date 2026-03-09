@@ -37,7 +37,7 @@
 #define VIDEO_COUNT 10
 
 // How fast does the transition phase last
-#define TRANSITION_GUESS_SPEED 150
+#define TRANSITION_GUESS_SPEED 100
 
 // The state which the game starts at
 #define DEFAULT_GAME_STATE title
