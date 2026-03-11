@@ -205,8 +205,8 @@ int finalConditionProperties(TTF_Text** videoTxt, TTF_Text** stateTxt, SDL_Textu
 		*videoTxt = TTF_CreateText(textEngine, ytFont, videoMsg, strlen(videoMsg));
 		*stateTxt = TTF_CreateText(textEngine, moreLessFont, stateMsg, strlen(stateMsg));
 
-		winSurf = IMG_Load("..\\assets\\images\\perm\\other\\winner.JPG");
-		pfpSurf = IMG_Load("..\\assets\\images\\perm\\other\\winner_channel.PNG");
+		winSurf = IMG_Load("..\\assets\\images\\perm\\final_screen\\0\\winner\\winner_0.JPG");
+		pfpSurf = IMG_Load("..\\assets\\images\\perm\\final_screen\\0\\winner\\winner_channel_0.PNG");
 	}
 	else {
 		char videoMsg[] = "Markiplier is disappointed (ASMR)";
@@ -215,8 +215,8 @@ int finalConditionProperties(TTF_Text** videoTxt, TTF_Text** stateTxt, SDL_Textu
 		*videoTxt = TTF_CreateText(textEngine, ytFont, videoMsg, strlen(videoMsg));
 		*stateTxt = TTF_CreateText(textEngine, moreLessFont, stateMsg, strlen(stateMsg));
 
-		winSurf = IMG_Load("..\\assets\\images\\perm\\other\\loser.JPG");
-		pfpSurf = IMG_Load("..\\assets\\images\\perm\\other\\loser_channel.PNG");
+		winSurf = IMG_Load("..\\assets\\images\\perm\\final_screen\\0\\loser\\loser_0.JPG");
+		pfpSurf = IMG_Load("..\\assets\\images\\perm\\final_screen\\0\\loser\\loser_channel_0.PNG");
 	}
 
 	pfpSurf = transformToCircle(pfpSurf);
