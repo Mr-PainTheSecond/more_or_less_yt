@@ -12,6 +12,8 @@
 // Turns ons all debug features. OFF for release.
 #define DEBUG 1
 
+#define FRAME_RATE 60
+
 // The width the windows will start at (if not fullscreen)
 #define DEFAULT_WIDTH 1080
 
@@ -35,7 +37,7 @@
 #define VIDEO_COUNT 10
 
 // How fast does the transition phase last
-#define TRANSITION_GUESS_SPEED 200
+#define TRANSITION_GUESS_SPEED 100
 
 // The state which the game starts at
 #define DEFAULT_GAME_STATE title
@@ -51,6 +53,9 @@
 
 // Increased time per question right (non-HarshTimer)
 #define TIMER_INCREMENT 2
+
+// Points deducted for difficulty >= pointDeduct
+#define POINT_DEDUCT_AMOUNT 2
 
 // Debug feature: Immune to losing lives. (not to time out)
 #define LIFE_IMMUNITY 1
