@@ -26,7 +26,12 @@ int moreOrLess(bool more, Queue* queue, int score, int* state) {
 			}
 			else {
 				gameAttr->state = moreRight;
-				gameAttr->timer += TIMER_INCREMENT;
+				if (difficulty == harshTimer) {
+					gameAttr->timer += TIMER_INCREMENT_HARSH;
+				}
+				else {
+					gameAttr->timer += TIMER_INCREMENT;
+				}
 			}
 
 			return score + 1;
@@ -76,7 +81,12 @@ int moreOrLess(bool more, Queue* queue, int score, int* state) {
 			}
 			else {
 				gameAttr->state = lessRight;
-				gameAttr->timer += TIMER_INCREMENT;
+				if (difficulty == harshTimer) {
+					gameAttr->timer += TIMER_INCREMENT_HARSH;
+				}
+				else {
+					gameAttr->timer += TIMER_INCREMENT;
+				}
 			}
 
 			return score + 1;
@@ -426,7 +436,11 @@ int main() {
 				else if (DEBUG && event.key.key == SDLK_F6) {
 					gameAttr->state = justQuit;
 
-					difficulty = (difficulty - 1) % 7;
+					difficulty--;
+
+					if (difficulty < 0) {
+						difficulty = 6;
+					}
 				}
 
 				// Increases difficulty
@@ -434,6 +448,7 @@ int main() {
 					gameAttr->state = justQuit;
 
 					difficulty = (difficulty + 1) % 7;
+					printf("%d\n", difficulty);
 				}
 
 				// Turn on/off life immunity
