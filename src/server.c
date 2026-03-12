@@ -86,7 +86,7 @@ bool getYtData(zsock_t* connection, Queue* queue) {
 	if (strcmp(data, "NOT_READY") == 0) {
 		printf("%s\n", "System works?");
 		quit(queue);
-		return false;
+		exit(0);
 	}
 
 	if (strcmp(data, "LOST") == 0) {

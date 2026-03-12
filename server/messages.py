@@ -15,7 +15,7 @@ class Messages:
         self.socket = self.context.socket(zmq.REP)
         self.socket.bind("tcp://*:5555")
         # Time out after 5 seconds
-        self.socket.setsockopt(zmq.RCVTIMEO, 5000)
+        self.socket.setsockopt(zmq.RCVTIMEO, 1000)
     
     def findConnection(self, illegalIndex = [], backup = False):
         # The download is complete when we got here
@@ -34,6 +34,7 @@ class Messages:
         while True:
             try:
                 response = str(self.socket.recv())
+                # If a message is received, just break :)
                 break
             # Designed so we can periodically check download status
             except zmq.error.Again:
@@ -57,7 +58,10 @@ class Messages:
             
         with lock:
             if backup and not globals.downloadComplete:
+                # Final server conversation
                 self.socket.send_string("NOT_READY")
+                self.socket.recv_string()
+                self.socket.send_string("DONE")
                 return
         print("[green]Established a connection")
         with lock:
