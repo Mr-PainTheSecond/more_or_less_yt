@@ -59,6 +59,8 @@ enum difficulties {standard, noSubs, timer, pointDeduct, lessHeart, noMil, harsh
 
 SDL_Color ytRed;
 Fonts* fontArray;
+char** offlineVideos;
+int offlineVideoCount;
 TTF_Font* smallFont;
 TTF_Font* moreLessFont;
 TTF_Font* timerFont;

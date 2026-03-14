@@ -21,7 +21,7 @@ time_t frameRateinMs(int frameRate) {
 	return 1000 / frameRate;
 }
 
-/*Takes an integer, and returns its string*/
+/*Takes an integer, and returns its string representation*/
 char* converToStr(int num) {
 	int numDigits;
 
@@ -61,7 +61,7 @@ char* choiceStr(char** array, int size) {
 location. fileOne is everything before each file and fileTwo is everything afterwards
 fileOne and fileTwo can be NULL, but both being NULL would do nothing*/
 void formatAsFileLocation(const char* fileOne, const char* fileTwo, char** files, int count) {
-	// Will literally do nothing lol
+	// Will literally do nothing with the input lol
 	if (fileOne == NULL && fileTwo == NULL) {
 		return;
 	}
@@ -165,6 +165,86 @@ char** readAndSplit(const char* fileName, char delimeter, int* size) {
 	*size = wordCount;
 	return words;
 }
+
+/*It takes a string, and splits it every time it sees
+the delimeter. 
+The great joy of C is making a function that is built-in
+on every other programming language.*/
+char** split(const char* str, char delimeter, int* size) {
+	char buffer[100];
+	char** words = malloc(sizeof(char*) * 20000);
+	if (words == NULL) {
+		fprintf(stderr, "%s\n", "Something went wrong with the words");
+		quit(ytQueue);
+		exit(1);
+	}
+
+	// Initialize all so compiler don't whine
+	for (int a  = 0; a < 100; a++) {
+		buffer[a] = '\0';
+	}
+
+	int wordCount = 0;
+	int charCount = 0;
+	int totalCharCount = 0;
+	char nextChar = str[charCount];
+	while (nextChar != '\0') {
+		if (nextChar != delimeter) {
+			buffer[charCount] = nextChar;
+		}
+		else {
+			// We don't put delimeter. Instead, we end string
+			buffer[charCount] = '\0';
+		}
+		charCount++;
+		totalCharCount++;
+		if (nextChar == delimeter) {
+			words[wordCount] = malloc(sizeof(char) * charCount);
+			if (words[wordCount] == NULL) {
+				fprintf(stderr, "Something went wrong with word %d\n", wordCount + 1);
+				quit(ytQueue);
+				exit(1);
+			}
+			
+			// We put it into DMA so it lives outside of here
+			strcpy(words[wordCount], buffer);
+			wordCount++;
+			charCount = 0;
+
+		}
+
+		nextChar = str[totalCharCount];
+	}
+	
+	buffer[charCount] = '\0';
+	charCount++;
+
+	words[wordCount] = malloc(sizeof(char) * charCount);
+
+	if (words[wordCount] == NULL) {
+		fprintf(stderr, "Something went wrong with word %d\n", wordCount + 1);
+		quit(ytQueue);
+		exit(1);
+	}
+
+	// Add the last word in.
+	strcpy(words[wordCount], buffer);
+
+	wordCount++;
+
+	int finalSize = wordCount;
+	char** temp = realloc(words, sizeof(char*) * finalSize);
+	if (temp == NULL) {
+		fprintf(stderr, "%s\n", "Something went wrong with the words");
+		quit(ytQueue);
+		exit(1);
+	}
+
+	words = temp;
+	*size = finalSize;
+	return words;
+}
+
 
 /*Checks if the queue is running low, 
 and if it is, it will ask the server for more data.*/
@@ -286,6 +366,12 @@ void quit(Queue* queue) {
 	SDL_DestroyRenderer(renderer);
 	TTF_DestroyGPUTextEngine(textEngine);
 	SDL_Quit();
+
+	for (int a = 0; a < offlineVideoCount; a++) {
+		free(offlineVideos[a]);
+	}
+
+	free(offlineVideos);
 
 	// We need to shutdown backup too.
 	if (strcmp(zstr_recv(requester), "ONE_MORE") == 0) {

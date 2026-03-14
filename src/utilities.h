@@ -21,6 +21,8 @@ float center(float pos, float size);
 
 char** readAndSplit(const char* fileName, char delimeter, int* size);
 
+char** split(const char* str, char delimeter, int* size);
+
 void formatAsFileLocation(const char* fileOne, const char* fileTwo, char** files, int count);
 
 char* choiceStr(char** array, int size);

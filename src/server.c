@@ -17,9 +17,9 @@ zsock_t* establishConnection() {
 	return requester;
 }
 
-/*With the data grabbed from the backend, will add every datapoint which partains to each
+/*With the data grabbed from the backend/offline, will add every datapoint which partains to each
 video. This includes: View Count (int and char*), file name, and sub counts */
-void storeYTData(Queue* queue,char* sData, int data, char* file_name, char* subCount) {
+void storeYTData(Queue* queue, char* sData, int data, char* file_name, char* subCount) {
 	YTNode* dataNode = malloc(sizeof(YTNode));
 	if (dataNode == NULL) {
 		quit(queue);
@@ -61,12 +61,15 @@ void storeYTData(Queue* queue,char* sData, int data, char* file_name, char* subC
 
 	strcpy(dataNode->subs, subCount);
 
+	printf("%s\n", dataNode->filePath);
+
 	SDL_Surface* surf = IMG_Load(dataNode->filePath);
 	if (surf == NULL) {
 		fprintf(stderr, "%s\n", SDL_GetError());	
 		quit(queue);
 		exit(1);
 	}
+
 	dataNode->img = SDL_CreateTextureFromSurface(renderer, surf);
 	SDL_DestroySurface(surf);
 	//printf("%s\n", dataNode->filePath);
@@ -80,18 +83,99 @@ void storeYTData(Queue* queue,char* sData, int data, char* file_name, char* subC
 //	char* buffer = zstr_recv(connection);
 //}
 
+/*When the server goes offline or is busy, this handles all the parts 
+which are different when the server isn't involved*/
+void storeYTDataOffline(Queue* queue, char* filePath, int count) {
+	char** chosenVideos = malloc(sizeof(char*) * count);
+	if (chosenVideos == NULL) {
+		fprintf(stderr, "%s\n", "No storage for the videos :(");
+		quit(queue);
+		exit(1);
+	}
+
+
+	for (int a = 0; a < count; a++) {
+		chosenVideos[a] = choiceStr(offlineVideos, offlineVideoCount);
+	}
+
+
+	/*From each video, we are gonna grab the path,
+	views, and subs, grab them with split, and add to the
+	queue*/
+	for (int b = 0; b < count; b++) {
+		int size = 4;
+		char** dataPoint = malloc(sizeof(char*) * size);
+
+		if (dataPoint == NULL) {
+			fprintf(stderr, "%s\n", "No storage for the data point :(");
+			quit(queue);
+			exit(1);
+		}
+
+		dataPoint = split(chosenVideos[b], ':', &size);
+
+		// Perform deep copies of the data points
+		char* path = malloc(sizeof(char) * (strlen(dataPoint[0]) + 1));
+
+		// First char is a space, so we need to ignore it
+		char* sViews = malloc(sizeof(char) * (strlen(dataPoint[1])));
+
+		// TODO: Fix duplicate view data
+		char* subs = malloc(sizeof(char) * (strlen(dataPoint[3])));
+
+		if (path == NULL || sViews == NULL || subs == NULL) {
+			fprintf(stderr, "%s\n", "No storage for one of the data points");
+			quit(queue);
+			exit(1);
+		}
+
+		strcpy(path, dataPoint[0]);
+		// Deletes an extra space at the beginning of the string
+		strcpy(sViews, &(dataPoint[1][1]));
+
+		strcpy(subs, &(dataPoint[3][1]));
+
+		for (int a = 0; a < size; a++) {
+			free(dataPoint[a]);
+		}
+
+		int views = convertToInt(sViews);
+
+		/*printf("Subs: %s\n", subs);
+		printf("Views: %s\n", sViews);
+		printf("Views (int): %d\n", views);
+		printf("Path: %s\n", path);*/
+
+		storeYTData(queue, sViews, views, path, subs);
+
+		free(sViews);
+		free(path);
+		free(subs);
+	}
+	
+	// We leave the invidual points for the quit funciton
+	free(chosenVideos);
+}
+
+/*When the game is running low on video, this function 
+requests for more. If the server is busy or offline, we use
+data that is readily avaliable. Otherwise, data from the
+SQL db and stuff from the Google API is used*/
 bool getYtData(zsock_t* connection, Queue* queue) {
 	char* data = zstr_recv(connection);
 
+	// Server is busy getting data, so we need to use offline data
 	if (strcmp(data, "NOT_READY") == 0) {
 		printf("%s\n", "System works?");
-		quit(queue);
-		exit(0);
+		storeYTDataOffline(queue, "..\\assets\\data\\offline_storage.txt", 20);
+		return true;
 	}
 
+	// Server is offline, so we need to use offline data
 	if (strcmp(data, "LOST") == 0) {
 		fprintf(stderr, "%s\n", "CONNECTION LOST");
-		return false;
+		storeYTDataOffline(queue, "..\\assets\\data\\offline_storage.txt", 20);
+		return true;
 	}
 
 	while (strcmp(data, "-1") != 0) {
@@ -103,6 +187,7 @@ bool getYtData(zsock_t* connection, Queue* queue) {
 		storeYTData(queue, data, intData, fileName, subCount);
 		zstr_send(connection, "Roger");
 		zstr_free(&fileName);
+		zstr_free(&subCount);
 		data = zstr_recv(connection);
 	}
 

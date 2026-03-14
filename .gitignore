@@ -376,3 +376,6 @@ FodyWeavers.xsd
 # IGNORES ENVSS!!!
 .env
 !.env.example
+
+# One time use file
+/server/generate.py

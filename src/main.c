@@ -340,7 +340,9 @@ int main() {
 		return -1;
 	}
 
-		
+	
+	offlineVideos = readAndSplit("..\\assets\\data\\offline_storage.txt", '\n', &offlineVideoCount);
+
 	clock_t timeClocked = clock();
 	clock_t cooldown = clock();
 
