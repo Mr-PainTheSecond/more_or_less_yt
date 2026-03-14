@@ -376,3 +376,6 @@ FodyWeavers.xsd
 # IGNORES ENVSS!!!
 .env
 !.env.example
+
+# For Python files that are not part of running the server
+*_ignore.py
