@@ -6,6 +6,7 @@
 #include "config.h"
 #include "globals.h"
 #include "draw_shape.h"
+#include "draw_title.h"
 #include "draw_game.h"
 #include "utilities.h"
 
