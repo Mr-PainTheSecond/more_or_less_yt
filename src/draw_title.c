@@ -7,8 +7,6 @@ float handleXPos(float* xPos, float w, float* h) {
 	// The screen has changed, we need to fix the positions
 	if (w != screen->w) {
 		// First, we removed the effect the screen width has on the positons
-		printf("hERELLO\n");
-
 		for (int a = 0; a < VIDEO_COUNT; a++) {
 			xPos[a] -= w / 4;
 		}
@@ -57,15 +55,22 @@ float handleXPos(float* xPos, float w, float* h) {
 game.*/
 int drawTitle(int state) {
 	static SDL_Texture** pfpImgs = NULL;
+	static SDL_FRect logoRect;
 	static SDL_Texture** thumbnailImgs = NULL;
 	static TTF_Font* startTxt = NULL;
 	static TTF_Font* quitTxt = NULL;
 	static float xPos[VIDEO_COUNT];
+	static float vectorFromLogo[VIDEO_COUNT][2];
 	static float w, h = 0;
 	int imgCount = 1;
 	int filesNum = 0;
 	static char** files;
+	static SDL_FRect* rectArray;
 	static char** thumbnailFiles;
+	int movePOS[] = { screen->w * 3 / 4, screen->h / 2 };
+
+	static int logoPOS[2];
+
 	if (pfpImgs == NULL) {
 		files = readAndSplit("..\\assets\\data\\pfp.txt", '\n', &filesNum);
 		formatAsFileLocation("..\\assets\\images\\perm\\pfp\\", NULL, files, filesNum);
@@ -98,10 +103,23 @@ int drawTitle(int state) {
 			SDL_DestroySurface(thumbnailSurf);
 		}
 
+		// This will store all the rectangles which will contains the videos
+		rectArray = malloc(sizeof(SDL_FRect) * VIDEO_COUNT);
+		if (rectArray == NULL) {
+			fprintf(stderr, "%s\n", "Allocation for rect array failed");
+			quit(ytQueue);
+			exit(1);
+		}
+
+		logoPOS[0] = screen->w / 2;
+		logoPOS[1] = screen->h / 2;
+
 		// Good way to signal that they are not initialized
 		xPos[0] = INT_MAX;
 		w = screen->w;
 		h = screen->h;
+
+		logoRect = createRect(logoPOS[0], logoPOS[1], w / 2, w / 2 * 9 / 16, false);
 	}
 
 	// The transition from title to main game.
@@ -125,6 +143,7 @@ int drawTitle(int state) {
 		free(thumbnailFiles);
 		free(pfpImgs);
 		free(thumbnailImgs);
+		free(rectArray);
 		// In case we come back here
 		pfpImgs = NULL;
 		return normal;
@@ -134,14 +153,6 @@ int drawTitle(int state) {
 		xOffset = -w;
 		yOffset = -h * 3 / 8;
 	}*/
-	// This will store all the rectangles which will contains the videos
-	SDL_FRect* rectArray = malloc(sizeof(SDL_FRect) * VIDEO_COUNT);
-	if (rectArray == NULL) {
-		fprintf(stderr, "%s\n", "Allocation for rect array failed");
-		quit(ytQueue);
-		exit(1);
-	}
-
 
 	SDL_FRect* pfpRects = malloc(sizeof(SDL_FRect) * VIDEO_COUNT);
 	if (pfpRects == NULL) {
@@ -153,12 +164,33 @@ int drawTitle(int state) {
 
 	w = handleXPos(xPos, w, &h);
 
-	float rectW = w / 4;
-	float rectH = h / 4;
+	static float rectW = 0;
+	static float rectH = 0;
+
+	if (rectW == 0) {
+		rectW = w / 4;
+		rectH = rectW * 9 / 16;
+	}
+	else {
+		rectW = rectArray[0].w;
+		rectH = rectArray[0].h;
+	}
 
 	for (int a = 0; a < VIDEO_COUNT; a++) {
-		float y = h / 4 + (h / 2 * ((int)((float)a / VIDEO_COUNT * 2)));
-		rectArray[a] = createRect(xPos[a], y, rectW, rectH, true);
+
+		float y;
+		if (rectW == w / 4) {
+			y = h / 4 + (h / 2 * ((int)((float)a / VIDEO_COUNT * 2)));
+			rectArray[a] = createRect(xPos[a], y, rectW, rectH, true);
+		}
+		else {
+			y = rectArray[a].y;
+			rectArray[a] = createRect(xPos[a], y, rectW, rectH, false);
+		}
+
+
+		vectorFromLogo[a][0] = logoRect.x - rectArray[a].x;
+		vectorFromLogo[a][1] = logoRect.y - rectArray[a].y;
 	}
 
 	// The location of all the profile pictures
@@ -167,6 +199,50 @@ int drawTitle(int state) {
 		int y = rectArray[a].y + rectArray[a].h + h / 16;
 		pfpRects[a] = createRect(x, y, h / 16, h / 16, true);
 	}
+
+	// Draw the large logo in the center
+	static int frames = 20;
+	if (center(logoRect.x, logoRect.w) != movePOS[0] || center(logoRect.y, logoRect.h) != movePOS[1]) {
+		float newX = logoRect.x + (movePOS[0] - logoRect.x) / frames;
+		float newY = logoRect.y + (movePOS[1] - logoRect.y) / frames;
+
+		printf("%f %f\n", newX, logoRect.x);
+		logoRect = zoom(logoRect.x, logoRect.y, newX, newY, logoRect.w, logoRect.h);
+		printf("%f\n", logoRect.x);
+
+		/*count++;*/
+		// We are where we want to be
+		/*if (count == frames) {
+			logoRect.x = movePOS[0];
+			logoRect.y = movePOS[1];
+		}	*/
+	}
+
+	for (int a = 0; a < VIDEO_COUNT; a++) {
+		float newDistanceX = logoRect.x - rectArray[a].x;
+		float newDistanceY = logoRect.y - rectArray[a].y;
+
+		float newX = rectArray[a].x + (newDistanceX - vectorFromLogo[a][0]);
+		float newY = rectArray[a].y + (newDistanceY - vectorFromLogo[a][1]);
+
+		if (a == 0) {
+			printf("X: %.2f %.2f\n", newX, rectArray[a].x);
+			printf("Y: %.2f %.2f\n", newY, rectArray[a].y);
+			printf("W: %.2f H: %.2f\n", rectArray[a].w, rectArray[a].h);
+		}
+
+		rectArray[a] = zoom(rectArray[a].x, rectArray[a].y, newX, newY, rectArray[a].w, rectArray[a].h);
+		xPos[a] = newX;
+
+		if (a == 0) {
+			printf("X POS: %f\n", xPos[a]);
+		}
+
+		rectArray[a].h = rectArray[a].w * 9 / 16;
+
+
+	}
+
 	//xOffset++;
 	//yOffset++;
 	SDL_RenderFillRects(renderer, rectArray, VIDEO_COUNT);
@@ -175,10 +251,10 @@ int drawTitle(int state) {
 		SDL_RenderTexture(renderer, pfpImgs[a], NULL, &(pfpRects[a]));
 		SDL_RenderTexture(renderer, thumbnailImgs[a], NULL, &(rectArray[a]));
 	}
-	free(rectArray);
+
 	free(pfpRects);
-	// Draw the large logo in the center
-	drawLogo(w / 2, h / 2, w / 2);
+
+	drawLogo(logoRect.x, logoRect.y, logoRect.w);
 	SDL_FRect startLogo = createRect(w / 2 - (w / 8), h * 7 / 8, w / 6, h / 6, true);
 	SDL_FRect quitLogo = createRect(w / 2 + (w / 8), h * 7 / 8, w / 6, h / 6, true);
 	// The Start and Quit Buttons
