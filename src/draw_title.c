@@ -3,16 +3,17 @@
 /*Handles everything for the xPos array, which keeps track of the positions
 of the thumbnails which are all offset every frame. Will also change the width and
 height if the screen size ever changes.*/
-float handleXPos(float* xPos, float w, float* h) {
+float handleXPos(float* realPOS, float* projectedPOS, float w, float* h, float rectW) {
+
 	// The screen has changed, we need to fix the positions
 	if (w != screen->w) {
 		// First, we removed the effect the screen width has on the positons
 		for (int a = 0; a < VIDEO_COUNT; a++) {
-			xPos[a] -= w / 4;
+			realPOS[a] -= rectW;
 		}
 
 		for (int a = 0; a < VIDEO_COUNT; a++) {
-			xPos[a] /= (w / 2);
+			realPOS[a] /= (w / 2);
 		}
 
 		// Correct the w/h variables
@@ -21,29 +22,29 @@ float handleXPos(float* xPos, float w, float* h) {
 
 		// We add back the effect
 		for (int a = 0; a < VIDEO_COUNT; a++) {
-			xPos[a] *= (w / 2);
+			realPOS[a] *= (w / 2);
 		}
 
 		for (int a = 0; a < VIDEO_COUNT; a++) {
-			xPos[a] += w / 4;
-			if (xPos[a] != a % (VIDEO_COUNT / 2)) printf("%f\n", xPos[a]);
+			realPOS[a] += rectW;
 		}
 	}
 
-	float rectW = w / 4;
 	// This signals that this is the first iteration, and we need to populate the value
-	if (xPos[0] == INT_MAX) {
+	if (realPOS[0] == INT_MAX) {
 		for (int a = 0; a < VIDEO_COUNT; a++) {
-			xPos[a] = w / 4 + (w / 2 * (a % (VIDEO_COUNT / 2)));
+			realPOS[a] = rectW + (w / 2 * (a % (VIDEO_COUNT / 2)));
+			projectedPOS[a] = realPOS[a];
 		}
 	}
+
 	// If not, we offset.
 	else {
 		for (int a = 0; a < VIDEO_COUNT; a++) {
-			xPos[a] -= 4;
-			if (xPos[a] + (rectW / 2) < 0) {
+			realPOS[a] -= 4;
+			if (projectedPOS[a] + rectW < 0) {
 				// This is the right most position the rect can be
-				xPos[a] = w / 4 + (w / 2 * (VIDEO_COUNT / 2 - 1));
+				realPOS[a] = rectW + (rectW * 2 * (VIDEO_COUNT / 2 - 1));
 			}
 		}
 	}
@@ -55,21 +56,29 @@ float handleXPos(float* xPos, float w, float* h) {
 game.*/
 int drawTitle(int state) {
 	static SDL_Texture** pfpImgs = NULL;
-	static SDL_FRect logoRect;
+	static SDL_FRect logoRect, logoRectProjection;
 	static SDL_Texture** thumbnailImgs = NULL;
 	static TTF_Font* startTxt = NULL;
 	static TTF_Font* quitTxt = NULL;
-	static float xPos[VIDEO_COUNT];
-	static float vectorFromLogo[VIDEO_COUNT][2];
+	static float xPos[2][VIDEO_COUNT];
+	static Vector2D vectorFromLogo[VIDEO_COUNT * 2];
 	static float w, h = 0;
+	static SDL_FRect startLogo, quitLogo;
+	static SDL_FRect startLogoProjection, quitLogoProjection;
 	int imgCount = 1;
 	int filesNum = 0;
 	static char** files;
-	static SDL_FRect* rectArray;
-	static char** thumbnailFiles;
-	int movePOS[] = { screen->w * 3 / 4, screen->h / 2 };
 
-	static int logoPOS[2];
+	static SDL_FRect* rectArray;
+	static SDL_FRect* rectArrayProjection;
+
+	static SDL_FRect* pfpRects;
+	static SDL_FRect* pfpRectsProjection;
+
+	static char** thumbnailFiles;
+	float movePOS[] = { screen->w * 3 / 4, screen->h / 2 };
+
+	static float logoPOS[2];
 
 	if (pfpImgs == NULL) {
 		files = readAndSplit("..\\assets\\data\\pfp.txt", '\n', &filesNum);
@@ -105,21 +114,58 @@ int drawTitle(int state) {
 
 		// This will store all the rectangles which will contains the videos
 		rectArray = malloc(sizeof(SDL_FRect) * VIDEO_COUNT);
-		if (rectArray == NULL) {
+		rectArrayProjection = (SDL_FRect*)malloc(sizeof(SDL_FRect) * VIDEO_COUNT);
+		if (rectArray == NULL || rectArrayProjection == NULL) {
 			fprintf(stderr, "%s\n", "Allocation for rect array failed");
 			quit(ytQueue);
 			exit(1);
 		}
 
+		pfpRects = malloc(sizeof(SDL_FRect) * VIDEO_COUNT);
+		pfpRectsProjection = (SDL_FRect*)malloc(sizeof(SDL_FRect) * VIDEO_COUNT);
+		if (pfpRects == NULL || pfpRectsProjection == NULL) {
+			fprintf(stderr, "%s\n", "Allocation for rect array failed");
+			quit(ytQueue);
+			exit(1);
+		}
+
+
+
 		logoPOS[0] = screen->w / 2;
 		logoPOS[1] = screen->h / 2;
 
 		// Good way to signal that they are not initialized
-		xPos[0] = INT_MAX;
+		xPos[0][0] = INT_MAX;
 		w = screen->w;
 		h = screen->h;
 
+		// Starting values of the logos
 		logoRect = createRect(logoPOS[0], logoPOS[1], w / 2, w / 2 * 9 / 16, false);
+		startLogo = createRect(w / 2 - (w / 8), h * 7 / 8, w / 6, h / 6, true);
+		quitLogo = createRect(w / 2 + (w / 8), h * 7 / 8, w / 6, h / 6, true);
+		
+		logoRectProjection = createRect(logoPOS[0], logoPOS[1], w / 2, w / 2 * 9 / 16, false);
+		startLogoProjection = createRect(w / 2 - (w / 8), h * 7 / 8, w / 6, h / 6, true);
+		quitLogoProjection = createRect(w / 2 + (w / 8), h * 7 / 8, w / 6, h / 6, true);
+
+	
+
+		float rectW = w / 4;
+		float rectH = rectW * 9 / 16;
+
+		w = handleXPos(xPos[0], xPos[1], w, &h, rectW);
+
+		for (int a = 0; a < VIDEO_COUNT; a++) {
+			float y = h / 4 + (h / 2 * ((int)((float)a / VIDEO_COUNT * 2)));
+			rectArray[a] = createRect(xPos[0][a], y, rectW, rectH, true);
+			rectArrayProjection[a] = createRect(xPos[0][a], y, rectW, rectH, true);
+
+			float pfpY = rectArray[a].y + rectArray[a].h + (h / 16);
+
+			pfpRects[a] = createRect(rectArray[a].x + (h / 16), pfpY, h / 16, h / 16, true);
+			pfpRectsProjection[a] = createRect(rectArray[a].x + (h / 16), pfpY, h / 16, h / 16, true);
+		}
+
 	}
 
 	// The transition from title to main game.
@@ -144,6 +190,8 @@ int drawTitle(int state) {
 		free(pfpImgs);
 		free(thumbnailImgs);
 		free(rectArray);
+		free(rectArrayProjection);
+		free(pfpRects);
 		// In case we come back here
 		pfpImgs = NULL;
 		return normal;
@@ -154,15 +202,44 @@ int drawTitle(int state) {
 		yOffset = -h * 3 / 8;
 	}*/
 
-	SDL_FRect* pfpRects = malloc(sizeof(SDL_FRect) * VIDEO_COUNT);
-	if (pfpRects == NULL) {
-		fprintf(stderr, "%s\n", "Allocation for rect array failed");
-		quit(ytQueue);
-		exit(1);
-	}
 	SDL_SetRenderDrawColor(renderer, 43, 17, 92, SDL_ALPHA_OPAQUE);
 
-	w = handleXPos(xPos, w, &h);
+	// Draw the large logo in the center
+	static int frames = FRAME_RATE / 2;
+	static int count = 0;
+	float xDifference;
+	float yDifference;
+
+	if (count < frames) {
+		xDifference = ((movePOS[0]) - logoRectProjection.x) / frames;
+		yDifference = (movePOS[1] - logoRectProjection.y) / frames;
+
+		float newX = logoRectProjection.x + (xDifference);
+		float newY = logoRectProjection.y + (yDifference);
+
+		logoRectProjection = zoom(logoRect.x, logoRect.y, newX, newY, logoRect.w, logoRect.h);
+
+		Vector2D startVector = { (startLogoProjection.x + (xDifference)) ,
+		(startLogoProjection.y + yDifference) };
+		Vector2D quitVector = { quitLogoProjection.x + xDifference,
+			quitLogoProjection.y + yDifference };
+
+		startLogoProjection = zoom(startLogo.x, startLogo.y, startVector.x, startVector.y, startLogo.w, startLogo.h);
+		quitLogoProjection = zoom(quitLogo.x, quitLogo.y, quitVector.x, quitVector.y, quitLogo.w, quitLogo.h);
+
+		count++;
+		/*count++;*/
+		// We are where we want to be
+		/*if (count == frames) {
+			logoRect.x = movePOS[0];
+			logoRect.y = movePOS[1];
+		}	*/
+	}
+	else {
+		xDifference = 0;
+		yDifference = 0;
+	}
+
 
 	static float rectW = 0;
 	static float rectH = 0;
@@ -172,96 +249,71 @@ int drawTitle(int state) {
 		rectH = rectW * 9 / 16;
 	}
 	else {
-		rectW = rectArray[0].w;
-		rectH = rectArray[0].h;
+		rectW = rectArrayProjection[0].w;
+		rectH = rectArrayProjection[0].h;
 	}
 
+	w = handleXPos(xPos[0], xPos[1], w, &h, rectW);
+
+	// This is gonna scale the videos/pfps based on the logo's movement
 	for (int a = 0; a < VIDEO_COUNT; a++) {
+		float realXShift = xPos[0][a] - rectArray[a].x;
 
-		float y;
-		if (rectW == w / 4) {
-			y = h / 4 + (h / 2 * ((int)((float)a / VIDEO_COUNT * 2)));
-			rectArray[a] = createRect(xPos[a], y, rectW, rectH, true);
-		}
-		else {
-			y = rectArray[a].y;
-			rectArray[a] = createRect(xPos[a], y, rectW, rectH, false);
-		}
-
-
-		vectorFromLogo[a][0] = logoRect.x - rectArray[a].x;
-		vectorFromLogo[a][1] = logoRect.y - rectArray[a].y;
-	}
-
-	// The location of all the profile pictures
-	for (int a = 0; a < VIDEO_COUNT; a++) {
-		int x = rectArray[a].x + (h / 16);
-		int y = rectArray[a].y + rectArray[a].h + h / 16;
-		pfpRects[a] = createRect(x, y, h / 16, h / 16, true);
-	}
-
-	// Draw the large logo in the center
-	static int frames = 20;
-	if (center(logoRect.x, logoRect.w) != movePOS[0] || center(logoRect.y, logoRect.h) != movePOS[1]) {
-		float newX = logoRect.x + (movePOS[0] - logoRect.x) / frames;
-		float newY = logoRect.y + (movePOS[1] - logoRect.y) / frames;
-
-		printf("%f %f\n", newX, logoRect.x);
-		logoRect = zoom(logoRect.x, logoRect.y, newX, newY, logoRect.w, logoRect.h);
-		printf("%f\n", logoRect.x);
-
-		/*count++;*/
-		// We are where we want to be
-		/*if (count == frames) {
-			logoRect.x = movePOS[0];
-			logoRect.y = movePOS[1];
-		}	*/
-	}
-
-	for (int a = 0; a < VIDEO_COUNT; a++) {
-		float newDistanceX = logoRect.x - rectArray[a].x;
-		float newDistanceY = logoRect.y - rectArray[a].y;
-
-		float newX = rectArray[a].x + (newDistanceX - vectorFromLogo[a][0]);
-		float newY = rectArray[a].y + (newDistanceY - vectorFromLogo[a][1]);
+		// xPos changes are real, not projected changes
+		rectArray[a].x = xPos[0][a];
+		pfpRects[a].x += realXShift;
 
 		if (a == 0) {
-			printf("X: %.2f %.2f\n", newX, rectArray[a].x);
-			printf("Y: %.2f %.2f\n", newY, rectArray[a].y);
-			printf("W: %.2f H: %.2f\n", rectArray[a].w, rectArray[a].h);
+			printf("%f %f\n", pfpRectsProjection[a].x, pfpRectsProjection[a].y);
 		}
 
-		rectArray[a] = zoom(rectArray[a].x, rectArray[a].y, newX, newY, rectArray[a].w, rectArray[a].h);
-		xPos[a] = newX;
+		float newXRects = rectArrayProjection[a].x + xDifference;
+		float newYRects = rectArrayProjection[a].y + yDifference;
 
-		if (a == 0) {
-			printf("X POS: %f\n", xPos[a]);
+		float newXpfp = pfpRectsProjection[a].x + xDifference;
+		float newYpfp = pfpRectsProjection[a].y + yDifference;
+
+		if (xDifference != 0 || yDifference != 0) {
+			rectArrayProjection[a] = zoom(rectArray[a].x, rectArray[a].y, newXRects, newYRects, rectArray[a].w, rectArray[a].h);
+			pfpRectsProjection[a] = zoom(pfpRects[a].x, pfpRects[a].y, newXpfp, newYpfp, pfpRects[a].w, pfpRects[a].h);
 		}
 
-		rectArray[a].h = rectArray[a].w * 9 / 16;
+		// Shifts in here so they don't count towards projection
+		rectArrayProjection[a].x += realXShift;
+		pfpRectsProjection[a].x += realXShift;
 
-
+		xPos[1][a] = rectArrayProjection[a].x;
 	}
 
 	//xOffset++;
 	//yOffset++;
-	SDL_RenderFillRects(renderer, rectArray, VIDEO_COUNT);
+	SDL_RenderFillRects(renderer, rectArrayProjection, VIDEO_COUNT);
 	// Renders all the texture currently in memory
 	for (int a = 0; a < VIDEO_COUNT; a++) {
-		SDL_RenderTexture(renderer, pfpImgs[a], NULL, &(pfpRects[a]));
-		SDL_RenderTexture(renderer, thumbnailImgs[a], NULL, &(rectArray[a]));
+		// Offscreen :)
+		if (rectArrayProjection[a].x + rectArrayProjection[a].w < 0 || rectArrayProjection[a].x > screen->w) {
+			continue;
+		}
+
+		if (!SDL_RenderTexture(renderer, pfpImgs[a], NULL, &(pfpRectsProjection[a]))) {
+			fprintf(stderr, "%s\n", SDL_GetError());
+			quit(ytQueue);
+			exit(1);
+		}
+
+
+		
+		SDL_RenderTexture(renderer, thumbnailImgs[a], NULL, &(rectArrayProjection[a]));
 	}
 
-	free(pfpRects);
 
-	drawLogo(logoRect.x, logoRect.y, logoRect.w);
-	SDL_FRect startLogo = createRect(w / 2 - (w / 8), h * 7 / 8, w / 6, h / 6, true);
-	SDL_FRect quitLogo = createRect(w / 2 + (w / 8), h * 7 / 8, w / 6, h / 6, true);
+	drawLogo(logoRectProjection.x, logoRectProjection.y, logoRectProjection.w);
+
 	// The Start and Quit Buttons
-	drawSmoothRectagle(startLogo, 100, 27, 0, SDL_ALPHA_OPAQUE, startLogo.w / 6);
-	drawSmoothRectagle(quitLogo, 100, 27, 0, SDL_ALPHA_OPAQUE, startLogo.w / 6);
+	drawSmoothRectagle(startLogoProjection, 100, 27, 0, SDL_ALPHA_OPAQUE, startLogoProjection.w / 6);
+	drawSmoothRectagle(quitLogoProjection, 100, 27, 0, SDL_ALPHA_OPAQUE, quitLogoProjection.w / 6);
 	int x, y;
-	displayText(startLogo, startTxt, &x, &y);
-	displayText(quitLogo, quitTxt, &x, &y);
+	displayText(startLogoProjection, startTxt, &x, &y);
+	displayText(quitLogoProjection, quitTxt, &x, &y);
 	return state;
 }

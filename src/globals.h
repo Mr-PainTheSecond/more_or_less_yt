@@ -44,6 +44,11 @@ typedef struct dText {
 	char* str;
 } DynamicText;
 
+typedef struct vector2D {
+	float x;
+	float y;
+} Vector2D;
+
 typedef struct queue {
 	YTNode* front;
 	YTNode* back;

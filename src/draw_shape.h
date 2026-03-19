@@ -1,6 +1,7 @@
 #ifndef DRAW_SHAPE_H_
 #define DRAW_SHAPE_H_
 #include "commons.h"
+#include "config.h"
 #include "globals.h"
 #include "utilities.h"
 

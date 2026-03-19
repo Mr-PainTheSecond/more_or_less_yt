@@ -76,24 +76,16 @@ SDL_Surface* transformToCircle(SDL_Surface* surf) {
 SDL_FRect zoom(float oldX, float oldY, float newX, float newY, float w, float h) {
 	float distanceX = oldX - newX;
 	float distanceY = oldY - newY;
-	float unscaledChange = normalize(oldX, oldY, newX, newY);
 
-	SDL_FRect object = createRect(newX, newY, w, h, false);
-	float scale = 0.5f;
+	float spawnZ = BASE_Z + oldX * ZOOM_EFFECT;
+	float currentZ = BASE_Z + newX * ZOOM_EFFECT;
 
-	if (distanceX < 0) {
-		object.w -= fabs(distanceX) * scale;
-	}
-	else {
-		object.w += fabs(distanceX) * scale;
-	}
+	float scale = spawnZ / currentZ;
 
-	if (distanceY > 0) {
-		object.h -= fabs(distanceY) * scale;
-	}
-	else {
-		object.h += fabs(distanceY) * scale;
-	}
+	float newW = w * scale;
+	float newH = h * scale;
+
+	SDL_FRect object = createRect(newX, newY, newW, newH, false);
 
 	return object;
 }

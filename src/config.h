@@ -66,5 +66,11 @@
 // Debug feature: Immune to losing lives. (not to time out)
 #define LIFE_IMMUNITY 0
 
+#define ZOOM_EFFECT 0.1f
+
+#define FOCAL 300	
+
+#define BASE_Z 300
+
 #endif // !CONFIG_H_
 
