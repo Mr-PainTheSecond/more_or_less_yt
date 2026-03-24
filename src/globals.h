@@ -55,6 +55,11 @@ typedef struct queue {
 	int size;
 } Queue;
 
+typedef struct projectedObject {
+	SDL_FRect realRect;
+	SDL_FRect projectedRect;
+} ProjectedObject;
+
 enum states {title, normal,
 	moreRight, moreWrong, lessRight, lessWrong, 
 	justQuit, justLost, justWon, gameOver, gameWon, shutDown};

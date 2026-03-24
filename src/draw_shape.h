@@ -12,5 +12,6 @@ void drawCircle(int x, int y, float radius, SDL_Color color);
 SDL_FRect zoom(float oldX, float oldY, float newX, float newY, float w, float h);
 SDL_Surface* setSurfGrayScale(SDL_Surface* surface);
 void drawLogo(int x, int y, float size);
+bool inBounds(SDL_FRect rect);
 
 #endif

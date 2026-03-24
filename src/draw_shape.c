@@ -11,11 +11,19 @@ void drawCircle(int x, int y, float radius, SDL_Color color) {
 	}
 }
 
+/*Given a rect, returns true if on screen,
+returns false otherwise. Important cause we shouldn't
+draw shit we can't see.*/
+bool inBounds(SDL_FRect rect) {
+	return rect.x + rect.w > 0 && rect.x < screen->w
+		&& rect.y + rect.h > 0 && rect.y < screen->h;
+}
 
 /*Draws the logo for the game (Basically the YT symbol).
 The size and location can be customized.*/
 void drawLogo(int x, int y, float size) {
 	SDL_FRect ytSymbol = createRect(x, y, size, size * 9 / 16, true);
+	if (!inBounds(ytSymbol)) return;
 	drawSmoothRectagle(ytSymbol, ytRed.r, ytRed.g, ytRed.b, SDL_ALPHA_OPAQUE, size / 8);
 	//displayText(ytSymbol, moreTxt, &x, &y);
 
@@ -77,15 +85,15 @@ SDL_FRect zoom(float oldX, float oldY, float newX, float newY, float w, float h)
 	float distanceX = oldX - newX;
 	float distanceY = oldY - newY;
 
-	float spawnZ = BASE_Z + oldX * ZOOM_EFFECT;
-	float currentZ = BASE_Z + newX * ZOOM_EFFECT;
+	float spawnZ = BASE_Z + FOCAL;
+	float currentZ = FOCAL + BASE_Z + (newX - oldX) * ZOOM_EFFECT;
 
 	float scale = spawnZ / currentZ;
 
 	float newW = w * scale;
 	float newH = h * scale;
 
-	SDL_FRect object = createRect(newX, newY, newW, newH, false);
+	SDL_FRect object = createRect(newX, oldY * scale, newW, newH, false);
 
 	return object;
 }
@@ -141,6 +149,7 @@ void drawRectangle(SDL_FRect* rect, int r, int g, int b, int a, bool border) {
 /*Draws a rectangle with smooth edges. This isn't included within SDL, so
 it is a little bit of a more involved process.*/
 void drawSmoothRectagle(SDL_FRect rect, int r, int g, int b, int a, float radius) {
+	if (!inBounds(rect)) return;
 	int segments = 2000;
 	int vertexes = (segments * 4 + 1) * 2;
 
