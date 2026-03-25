@@ -116,7 +116,7 @@ int draw(TTF_Text* more, TTF_Text* less, Queue* queue) {
 	SDL_SetRenderDrawColor(renderer, 128, 0, 32, SDL_ALPHA_OPAQUE);
 	SDL_RenderClear(renderer);
 
-	if (gameAttr->state == title  || gameAttr->state == shutDown) {
+	if (gameAttr->state >= title && gameAttr->state <= titleDiff  || gameAttr->state == shutDown) {
 		gameAttr->state = drawTitle(gameAttr->state);
 	}
 

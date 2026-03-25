@@ -269,7 +269,7 @@ void handleMouseClick(SDL_MouseButtonEvent button, bool* aboutToQuit, int* timeC
 		if (gameAttr->state == title) {
 			gameTrans = startLogo;
 			gameQuit = quitLogo;
-			newState = normal;
+			newState = titleAni;
 		}
 		else {
 			gameTrans = menuRect;
@@ -377,7 +377,7 @@ int main() {
 					if (gameAttr->state >= normal && gameAttr->state <= gameWon) {
 						gameAttr->state = justQuit;
 					}
-					else if (gameAttr->state == title) {
+					else if (gameAttr->state == title || gameAttr->state == titleDiff) {
 						gameAttr->state = shutDown;
 						aboutToQuit = true;
 					}
@@ -492,13 +492,13 @@ int main() {
 			}
 		}
 		
+		gameAttr->state = draw(moreText, lessText, ytQueue);
+
 		clock_t finishTime = clock();
 		// Enforce the FPS
 		while (finishTime - currentTime < frameRateinMs(FRAME_RATE)) {
 			finishTime = clock();
 		}
-    
-		gameAttr->state = draw(moreText, lessText, ytQueue);
 
 		if (gameAttr->score < 0) {
 			gameAttr->score = 0;

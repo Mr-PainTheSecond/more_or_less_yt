@@ -146,11 +146,44 @@ void drawRectangle(SDL_FRect* rect, int r, int g, int b, int a, bool border) {
 	}
 }
 
+void drawSmoothEdges(SDL_FPoint* points, int firstIndex, int segments, SDL_FColor color) {
+	SDL_Vertex* coolVertex = malloc(sizeof(SDL_Vertex) * (segments + 2));
+	int* indicies = malloc(sizeof(int) * segments * 3);
+
+	if (coolVertex == NULL || indicies == NULL) {
+		fprintf(stderr, "%s\n", "Error getting mem for the cooler vertices");
+		quit(ytQueue);
+		exit(1);
+	}
+
+	coolVertex[0].color = (SDL_FColor){ color.r, color.g, color.b, color.a};
+	coolVertex[0].position = (SDL_FPoint){ points[firstIndex].x, points[firstIndex].y};
+	coolVertex[0].tex_coord = (SDL_FPoint){ 0, 0 };
+	// Draw the corners :) (i think i forgor lol)
+	// Tragically forced to use i cause of colors lol
+	for (int i = firstIndex + 1; i <= segments + 1; i++) {
+		coolVertex[i].position = (SDL_FPoint){ points[i].x, points[i].y };
+		coolVertex[i].tex_coord = (SDL_FPoint){ 0, 0 };
+		coolVertex[i].color = (SDL_FColor){ color.r, color.g, color.b, color.a};
+	}
+
+	for (int a = 0; a < segments; a++) {
+		indicies[a * 3] = 0;
+		indicies[a * 3 + 1] = a + 1;
+		indicies[a * 3 + 2] = a + 2;
+	}
+
+	SDL_RenderGeometry(renderer, NULL, coolVertex, segments + 2, indicies, segments * 3);
+
+	free(coolVertex);
+	free(indicies);
+}
+
 /*Draws a rectangle with smooth edges. This isn't included within SDL, so
 it is a little bit of a more involved process.*/
 void drawSmoothRectagle(SDL_FRect rect, int r, int g, int b, int a, float radius) {
 	if (!inBounds(rect)) return;
-	int segments = 2000;
+	int segments = 24;
 	int vertexes = (segments * 4 + 1) * 2;
 
 	SDL_FPoint* vertices = malloc(sizeof(SDL_Point) * vertexes);
@@ -166,66 +199,51 @@ void drawSmoothRectagle(SDL_FRect rect, int r, int g, int b, int a, float radius
 
 	int index = 1;
 
+	float top = rect.y + radius;
+	float left = rect.x + radius;
+	float right = rect.x + rect.w - radius;
+	float bottom = rect.y + rect.h - radius;
+
 	// Top Left
+	float angleStep = (M_PI / 2.0f) / segments;
 	for (int a = 0; a <= segments; a++) {
-		float angles = M_PI + a * (M_PI / 2) / segments;
-		vertices[index].x = rect.x + radius + cos(angles) * radius;
-		vertices[index].y = rect.y + radius + sin(angles) * radius;
+		float angles = M_PI + a * angleStep;
+		vertices[index].x = left + cosf(angles) * radius;
+		vertices[index].y = top + sinf(angles) * radius;
 		//printf("%f, %f\n", vertices[index].x, vertices[index].y);
 		index++;
 	}
 
 	// Top Right
 	for (int a = 0; a <= segments; a++) {
-		float angles = -M_PI / 2 + a * (M_PI / 2) / segments;
-		vertices[index].x = rect.x + +rect.w - radius + cos(angles) * radius;
-		vertices[index].y = rect.y + radius + sin(angles) * radius;
+		float angles = -M_PI / 2 + a * angleStep;
+		vertices[index].x = right + cosf(angles) * radius;
+		vertices[index].y = top + sinf(angles) * radius;
 		//printf("%f, %f\n", vertices[index].x, vertices[index].y);
 		index++;
 	}
 
 	// Bottom Right
 	for (int a = 0; a <= segments; a++) {
-		float angles = a * (M_PI / 2) / segments;
-		vertices[index].x = rect.x + rect.w - radius + cos(angles) * radius;
-		vertices[index].y = rect.y + rect.h - radius + sin(angles) * radius;
+		float angles = a * angleStep;
+		vertices[index].x = right + cosf(angles) * radius;
+		vertices[index].y = bottom + sinf(angles) * radius;
 		//printf("%f, %f\n", vertices[index].x, vertices[index].y);
 		index++;
 	}
 
 	// Bottom Left
 	for (int a = 0; a <= segments; a++) {
-		float angles = M_PI / 2 + a * (M_PI / 2) / segments;
-		vertices[index].x = rect.x + radius + cos(angles) * radius;
-		vertices[index].y = rect.y + rect.h - radius + sin(angles) * radius;
+		float angles = M_PI / 2 + a * angleStep;
+		vertices[index].x = left + cosf(angles) * radius;
+		vertices[index].y = bottom + sinf(angles) * radius;
 		//printf("%f, %f\n", vertices[index].x, vertices[index].y);
 		index++;
 	}
 
-	// Coloring everything
-	/*SDL_FColor color = { r, g, b, SDL_ALPHA_OPAQUE };
-	for (int a = 0; a < vertexes; a++) {
-		vertices[a].color = color;
-	}*/
+
 	// We used the diameter a lot
 	float diameter = radius * 2;
-
-	SDL_SetRenderDrawColor(renderer, r, g, b, a);
-	SDL_RenderPoints(renderer, vertices, index);
-	// Rendering the lines for the rectangle
-	// Top Left to Top Right
-	SDL_RenderLine(renderer, vertices[segments].x, vertices[segments].y,
-		vertices[segments].x + rect.w - diameter, vertices[segments].y);
-	// Top to Bottom (Left)
-	SDL_RenderLine(renderer, vertices[1].x, vertices[1].y,
-		vertices[1].x, vertices[1].y + rect.h - diameter);
-
-	// Top to Bottom (Right)
-	SDL_RenderLine(renderer, vertices[segments * 2].x, vertices[segments * 2].y,
-		vertices[segments * 2].x, vertices[segments * 2].y + rect.h - diameter);
-	// Bottom Right to Bottom Left
-	SDL_RenderLine(renderer, vertices[segments * 3].x, vertices[segments * 3].y,
-		vertices[segments * 3].x - rect.w + diameter, vertices[segments * 3].y);
 
 	rect.w -= radius * 4;
 	rect.h -= radius * 4;
@@ -259,19 +277,9 @@ void drawSmoothRectagle(SDL_FRect rect, int r, int g, int b, int a, float radius
 	// Draw messes up the renderer color
 	SDL_SetRenderDrawColor(renderer, r, g, b, a);
 	index = 1;
-	for (int a = 0; a <= segments * 2; a++) {
-		SDL_RenderLine(renderer, vertices[index].x, vertices[index].y,
-			topRect.x, vertices[index].y);
-		index++;
-	}
 
-	for (int a = 0; a <= segments * 2; a++) {
-		SDL_RenderLine(renderer, vertices[index].x, vertices[index].y,
-			bottomRect.x, vertices[index].y);
-		index++;
-	}
-
+	SDL_FColor color = (SDL_FColor){ r / 255.f, g / 255.f, b / 255.f, a / 255.f };
+	drawSmoothEdges(vertices, 0, (vertexes / 2) + 2, color);
 	free(vertices);
-	/*quit(ytQueue);
-	exit(0);*/
+	
 }

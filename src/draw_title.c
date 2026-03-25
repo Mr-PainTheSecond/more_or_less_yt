@@ -33,7 +33,7 @@ float handleXPos(float* realPOS, float* projectedPOS, float w, float* h, float r
 	// This signals that this is the first iteration, and we need to populate the value
 	if (realPOS[0] == INT_MAX) {
 		for (int a = 0; a < VIDEO_COUNT; a++) {
-			realPOS[a] = rectW + (w / 2 * (a % (VIDEO_COUNT / 2)));
+			realPOS[a] = rectW + (w / 2 * (a % (VIDEO_COUNT / LEVEL_COUNT)));
 			projectedPOS[a] = realPOS[a];
 		}
 	}
@@ -44,7 +44,7 @@ float handleXPos(float* realPOS, float* projectedPOS, float w, float* h, float r
 			realPOS[a] -= 4;
 			if (projectedPOS[a] + rectW < 0) {
 				// This is the right most position the rect can be
-				realPOS[a] = rectW + (rectW * 2 * (VIDEO_COUNT / 2 - 1));
+				realPOS[a] = rectW + (rectW * 2 * (VIDEO_COUNT / LEVEL_COUNT - 1));
 			}
 		}
 	}
@@ -65,12 +65,14 @@ int drawTitle(int state) {
 	static SDL_Texture** pfpImgs = NULL;
 	static ProjectedObject logoRect;
 	static SDL_Texture** thumbnailImgs = NULL;
-	static TTF_Font* startTxt = NULL;
-	static TTF_Font* quitTxt = NULL;
+	static TTF_Text* startTxt = NULL;
+	static TTF_Text* quitTxt = NULL;
+	static TTF_Text* selectTxt = NULL;
 	static float xPos[2][VIDEO_COUNT];
 	static Vector2D vectorFromLogo[VIDEO_COUNT * 2];
 	static float w, h = 0;
 	static ProjectedObject startLogo, quitLogo;
+	SDL_Color wineColor = { 100, 27, 0, SDL_ALPHA_OPAQUE };
 	int imgCount = 1;
 	int filesNum = 0;
 	static char** files;
@@ -114,6 +116,8 @@ int drawTitle(int state) {
 
 		startTxt = TTF_CreateText(textEngine, smallFont, "Start", strlen("Start"));
 		quitTxt = TTF_CreateText(textEngine, smallFont, "Quit", strlen("Quit"));
+		selectTxt = TTF_CreateText(textEngine, smallFont, "Select", strlen("Select"));
+
 		for (int a = 0; a < VIDEO_COUNT; a++) {
 			int imgIndex = rand() % filesNum;
 			SDL_Surface* pfpSurf = IMG_Load(files[imgIndex]);
@@ -173,8 +177,9 @@ int drawTitle(int state) {
 
 		w = handleXPos(xPos[0], xPos[1], w, &h, rectW);
 
+		// These are thumbnails/video floating around
 		for (int a = 0; a < VIDEO_COUNT; a++) {
-			float y = h / 4 + (h / 2 * ((int)((float)a / VIDEO_COUNT * 2)));
+			float y = h / 4 + (h / 2 * ((int)((float)a / VIDEO_COUNT * LEVEL_COUNT)));
 			rectArray[a].realRect = createRect(xPos[0][a], y, rectW, rectH, true);
 			rectArray[a].projectedRect = createRect(xPos[0][a], y, rectW, rectH, true);
 
@@ -184,6 +189,7 @@ int drawTitle(int state) {
 			pfpRects[a].projectedRect = createRect(rectArray[a].realRect.x + (h / 16), pfpY, h / 16, h / 16, true);
 		}
 
+		// The difficulty select assets
 		for (int a = 0; a < difficultyCount; a++) {
 
 			float width = w / 6 * firstStopRatio;
@@ -226,6 +232,7 @@ int drawTitle(int state) {
 		free(rectArray);
 		free(pfpRects);
 		free(difficultyRects);
+		free(buttonDifficulty);
 		// In case we come back here
 		pfpImgs = NULL;
 		return normal;
@@ -243,7 +250,7 @@ int drawTitle(int state) {
 	float xDifference;
 	float yDifference;
 
-	if (count < frames) {
+	if (count < frames && state == titleAni) {
 		xDifference = ((movePOS[0]) - logoRect.projectedRect.x) / frames;
 		yDifference = (movePOS[1] - logoRect.projectedRect.y) / frames;
 
@@ -270,9 +277,9 @@ int drawTitle(int state) {
 	else {
 		xDifference = 0;
 		yDifference = 0;
-		printf("%f\n", buttonDifficulty[0].projectedRect.x);
-		printf("%f\n", logoRect.projectedRect.x - logoRect.realRect.x);
-		printf("distance y: %f\n", logoRect.projectedRect.y - logoRect.realRect.x);
+		if (state == titleAni) {
+			state = titleDiff;
+		}
 	}
 
 
@@ -297,10 +304,6 @@ int drawTitle(int state) {
 		// xPos changes are real, not projected changes
 		rectArray[a].realRect.x = xPos[0][a];
 		pfpRects[a].realRect.x += realXShift;
-
-		if (a == 0) {
-			printf("%f %f\n", rectArray[a].projectedRect.x, rectArray[a].projectedRect.y);
-		}
 
 		if (xDifference != 0 || yDifference != 0) {
 			rectArray[a] = projectRect(rectArray[a], xDifference, yDifference);
@@ -340,18 +343,20 @@ int drawTitle(int state) {
 
 	SDL_SetRenderDrawColor(renderer, 128, 128, 128, SDL_ALPHA_OPAQUE);
 
+	int x, y;
+
 	for (int a = 0; a < difficultyCount; a++) {
 		SDL_RenderRect(renderer, &(difficultyRects[a].projectedRect));
 
-		SDL_RenderRect(renderer, &(buttonDifficulty[a].projectedRect));
+		drawSmoothRectagle(buttonDifficulty[a].projectedRect, wineColor.r, wineColor.g, wineColor.b, wineColor.a, buttonDifficulty[a].projectedRect.w / 6);
+		displayText(buttonDifficulty[a].projectedRect, selectTxt, &x, &y);
 	}
 
 	drawLogo(logoRect.projectedRect.x, logoRect.projectedRect.y, logoRect.projectedRect.w);
 
-	// The Start and Quit Buttons
-	drawSmoothRectagle(startLogo.projectedRect, 100, 27, 0, SDL_ALPHA_OPAQUE, startLogo.projectedRect.w / 6);
-	drawSmoothRectagle(quitLogo.projectedRect, 100, 27, 0, SDL_ALPHA_OPAQUE, quitLogo.projectedRect.w / 6);
-	int x, y;
+	// The Start and Quit Buttons (smooth rect handles out of bounds internally)
+	drawSmoothRectagle(startLogo.projectedRect, wineColor.r, wineColor.g, wineColor.b, wineColor.a, startLogo.projectedRect.w / 6);
+	drawSmoothRectagle(quitLogo.projectedRect, wineColor.r, wineColor.g, wineColor.b, wineColor.a, quitLogo.projectedRect.w / 6);
 	displayText(startLogo.projectedRect, startTxt, &x, &y);
 	displayText(quitLogo.projectedRect, quitTxt, &x, &y);
 	return state;

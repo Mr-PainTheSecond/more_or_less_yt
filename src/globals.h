@@ -60,7 +60,7 @@ typedef struct projectedObject {
 	SDL_FRect projectedRect;
 } ProjectedObject;
 
-enum states {title, normal,
+enum states {title, titleAni, titleDiff, normal,
 	moreRight, moreWrong, lessRight, lessWrong, 
 	justQuit, justLost, justWon, gameOver, gameWon, shutDown};
 enum toggles {enableW = 1, enableS, disableEsc, enableEsc, disableS, disableW};

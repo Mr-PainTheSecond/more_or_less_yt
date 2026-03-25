@@ -35,6 +35,9 @@ void get_text_center_size(SDL_FRect rect, int* x, int* y, float w, float h) {
 /*Draw the text the given text into the center of the given
 rectangle*/
 void displayText(SDL_FRect rect, TTF_Text* txt, int* x, int* y) {
+	// If the rect isn't inbound, neither is the text
+	if (!inBounds(rect)) return;
+
 	get_text_center(rect, txt, x, y);
 
 	if (!TTF_DrawRendererText(txt, (float)*x, (float)*y)) {

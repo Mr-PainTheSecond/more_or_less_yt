@@ -4,6 +4,8 @@
 #include "commons.h"
 #include "globals.h"
 #include "utilities.h"
+#include "draw_shape.h"
+
 void createFontArray();
 char* format(char* original, const char* suffix);
 void freeFontArray();
