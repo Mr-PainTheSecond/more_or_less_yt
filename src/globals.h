@@ -8,8 +8,8 @@
 SDL_Renderer* renderer;
 SDL_Window* window;
 typedef struct screen {
-	int w;
-	int h;
+	float w;
+	float h;
 	SDL_DisplayID id;
 	SDL_Surface* surface;
 } Screen;
@@ -73,6 +73,7 @@ TTF_Font* smallFont;
 TTF_Font* moreLessFont;
 TTF_Font* timerFont;
 TTF_Font* ytFont;
+SDL_FRect diffToTitle;
 int difficulty;
 TTF_TextEngine* textEngine;
 Queue* ytQueue;

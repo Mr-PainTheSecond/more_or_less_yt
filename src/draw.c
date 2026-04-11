@@ -49,8 +49,8 @@ void drawFinalScreen() {
 	static TTF_Text* quitTxt;
 	// Keep track of previous state to swap assets
 	static int previousState = 0;
-	int w = screen->w;
-	int h = screen->h;
+	float w = screen->w;
+	float h = screen->h;
 	// The game is ending. Free all the assets and return
 	if (gameAttr->state == shutDown) {
 		if (background != NULL) {

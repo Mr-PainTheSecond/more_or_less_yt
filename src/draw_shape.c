@@ -21,8 +21,8 @@ bool inBounds(SDL_FRect rect) {
 
 /*Draws the logo for the game (Basically the YT symbol).
 The size and location can be customized.*/
-void drawLogo(int x, int y, float size) {
-	SDL_FRect ytSymbol = createRect(x, y, size, size * 9 / 16, true);
+void drawLogo(int x, int y, float size, bool centered) {
+	SDL_FRect ytSymbol = createRect(x, y, size, size * 9 / 16, centered);
 	if (!inBounds(ytSymbol)) return;
 	drawSmoothRectagle(ytSymbol, ytRed.r, ytRed.g, ytRed.b, SDL_ALPHA_OPAQUE, size / 8);
 	//displayText(ytSymbol, moreTxt, &x, &y);

@@ -34,10 +34,10 @@
 #define FONT_OFFSET 3840.0f
 
 // How many videos are loaded into the start screen
-#define VIDEO_COUNT 25
+#define VIDEO_COUNT 30
 
 // The amount of levels found in the title screen thumbnails
-#define LEVEL_COUNT 5	
+#define LEVEL_COUNT 6	
 
 // How fast does the transition phase last
 #define TRANSITION_GUESS_SPEED 100

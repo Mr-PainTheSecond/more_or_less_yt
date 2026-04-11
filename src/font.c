@@ -46,6 +46,48 @@ void displayText(SDL_FRect rect, TTF_Text* txt, int* x, int* y) {
 	}
 }
 
+/*Draws text using SDL textures as opposed to the TTF stuff.
+Useful for the zooming out feature*/
+void displayTextAsSurface(ProjectedObject obj, TTF_Text* txt) {
+	// Can't see, don't render
+	if (!inBounds(obj.projectedRect)) return;
+
+	SDL_Color txtColor;
+
+	int w, h;
+
+	TTF_GetTextSize(txt, &w, &h);
+	float sizeRatio = obj.projectedRect.w / obj.realRect.w;
+
+	w *= sizeRatio;
+	h *= sizeRatio;
+	//txt->text[strlen(txt->text)] = '\0';
+
+	TTF_GetTextColor(txt, &(txtColor.r), &(txtColor.g), &(txtColor.b), &(txtColor.a));
+	SDL_Texture* txtTexture = NULL;
+	SDL_Surface* txtSurface = TTF_RenderText_Solid(smallFont, txt->text, strlen(txt->text), txtColor);
+
+	if (txtSurface == NULL) {
+		fprintf(stderr, "%s\n", "Surface for Txt Failed");
+		quit(ytQueue);
+		exit(1);
+	}
+
+	txtTexture = SDL_CreateTextureFromSurface(renderer, txtSurface);
+	SDL_DestroySurface(txtSurface);
+	
+	if (txtTexture == NULL) {
+		fprintf(stderr, "%s\n", "Texture for txt falied: ");
+		quit(ytQueue);
+		exit(1);
+	}
+
+	SDL_FRect realRect = createRect(obj.projectedRect.x + (obj.projectedRect.w / 2), obj.projectedRect.y + (obj.projectedRect.h / 2), w,
+		h, true);
+
+	SDL_RenderTexture(renderer, txtTexture, NULL, &realRect);
+	SDL_DestroyTexture(txtTexture);
+}
 
 void createFontArray() {
 	fontArray = malloc(sizeof(Fonts));
@@ -203,6 +245,24 @@ void destroyDynamicText(DynamicText* dmTxt) {
 	TTF_DestroyText(dmTxt->text);
 	free(dmTxt->str);
 	free(dmTxt);
+}
+
+void zoomOutTxt(TTF_Font* oldFont, float oldX, float newX) {
+
+	float spawnZ = BASE_Z + FOCAL;
+	float currentZ = FOCAL + BASE_Z + (newX - oldX) * ZOOM_EFFECT;
+
+	float scale = (spawnZ / currentZ);
+	
+
+	float newSize = TTF_GetFontSize(oldFont) * scale;
+	if (!TTF_SetFontSize(oldFont, newSize)) {
+		fprintf(stderr, "%s\n", "Error with setting the font size");
+		quit(ytQueue);
+		exit(-1);
+	}
+
+	printf("%f\n", TTF_GetFontSize(oldFont));
 }
 
 TTF_Font* createFont(char* file_name, float size) {

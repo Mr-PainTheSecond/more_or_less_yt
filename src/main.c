@@ -240,14 +240,19 @@ void updateScreen(TTF_Font** moreLessFont, bool fullScreen) {
 
 /*Will handles all cases whenever the left button is clicked*/
 void handleMouseClick(SDL_MouseButtonEvent button, bool* aboutToQuit, int* timeClocked, int* counter) {
+	// Main Game
 	SDL_FRect more = createRect(screen->w / 2, screen->h / 2, screen->w / 4, screen->h / 8, true);
 	SDL_FRect less = createRect(screen->w / 2, screen->h * 5 / 8, screen->w / 4, screen->h / 8, true);
+	// Initial title screen
 	SDL_FRect startLogo = createRect(screen->w / 2 - (screen->w / 8), screen->h * 7 / 8, screen->w / 6, screen->h / 6, true);
 	SDL_FRect quitLogo = createRect(screen->w / 2 + (screen->w / 8), screen->h * 7 / 8, screen->w / 6, screen->h / 6, true);
+	// Win/Lose Screen
 	SDL_FRect quitRectWin = createRect(screen->w * 7 / 8, screen->h / 2 + (screen->h / 6), screen->w / 6, screen->h / 6, true);
 	SDL_FRect menuRect = createRect(screen->w * 7 / 8, screen->h / 2 - (screen->h / 6), screen->w / 6, screen->h / 6, true);
+	// Title Difficulty Select
+	SDL_FRect backRect = diffToTitle;
 
-	// When state is normal, we will presses as a guess
+	// When state is normal, we will process as a guess
 	if (gameAttr->state == normal) {
 		if (isPressed(event.button, more)) {
 			gameAttr->score = moreOrLess(true, ytQueue, gameAttr->score, &gameAttr->state);
@@ -289,6 +294,12 @@ void handleMouseClick(SDL_MouseButtonEvent button, bool* aboutToQuit, int* timeC
 	// Allows user to skip the animantion
 	else if (gameAttr->state >= moreRight && gameAttr->state <= lessWrong) {
 		gameAttr->state = normal;
+	}
+	else if (gameAttr->state == titleDiff) {
+		if (isPressed(event.button, backRect)) {
+			gameAttr->state = titleAni;
+			printf("It is pressed\n");
+		}
 	}
 }
 
