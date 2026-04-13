@@ -70,6 +70,13 @@ ProjectedObject createProjectedObject(float x, float y, float w, float h, bool c
 	return newObj;
 }
 
+ProjectedObject unprojectObject(ProjectedObject obj) {
+	obj.projectedRect.x = obj.realRect.x;
+	obj.projectedRect.y = obj.realRect.y;
+	obj.projectedRect.w = obj.realRect.w;
+	obj.projectedRect.h = obj.realRect.h;
+}
+
 /*Responsible for drawing the entire title section of the
 game.*/
 int drawTitle(int state) {
@@ -80,6 +87,7 @@ int drawTitle(int state) {
 	static TTF_Text* quitTxt = NULL;
 	static TTF_Text* backTxt = NULL;
 	static TTF_Text* selectTxt = NULL;
+	static TTF_Text* playTxt = NULL;
 	static TTF_Font* firstStopFont = NULL;
 
 	static TTF_Text** explanationTxt = NULL;
@@ -91,7 +99,8 @@ int drawTitle(int state) {
 	static ProjectedObject startLogo, quitLogo, backLogo;
 
 	SDL_Color wineColor = { 100, 27, 0, SDL_ALPHA_OPAQUE };
-	SDL_Color greenColor = { 0, 83, 10, SDL_ALPHA_OPAQUE };
+	SDL_Color greenColor = { 0, 102, 27, SDL_ALPHA_OPAQUE };
+	SDL_Color orangeColor = { 238, 63, 0, SDL_ALPHA_OPAQUE };
 
 	int imgCount = 1;
 	int filesNum = 0;
@@ -100,6 +109,7 @@ int drawTitle(int state) {
 
 	static ProjectedObject logoRect;
 	static ProjectedObject explanationRect;
+	static ProjectedObject beginGameLogo;
 
 	static ProjectedObject* rectArray;
 	static ProjectedObject* pfpRects;
@@ -110,20 +120,21 @@ int drawTitle(int state) {
 	float movePOS[] = { screen->w * 2, screen->h / 2 };
 
 	static float logoPOS[2];
-	const float firstStopRatio = 3.03f;
-	const int firstStopDistanceX = 3658;
-	const int firstStopDistanceY = -1886;
+	static float firstStopRatio;
+	static int firstStopDistanceX;
+	static int firstStopDistanceY;
+	const float yDisToH = 0.787f;
 	
-	static float screenWrap = 0;
+	static float screenWrap = -1;
 
 	// The point where the thumbnails will wrap around
-	if (screenWrap == 0) {
+	if (screenWrap < 0) {
 		screenWrap = firstStopDistanceX;
 	}
 
 	float expOffset = screen->h * 7 / 4;
+	const int selectScreenRects = DIFFICULTY_COUNT + 1;
 
-	const int difficultyCount = 8;
 	const int frames = FRAME_RATE * 3 / 2;
 
 	if (pfpImgs == NULL) {
@@ -145,6 +156,25 @@ int drawTitle(int state) {
 			exit(1);
 		}
 
+		logoPOS[0] = screen->w / 2;
+		logoPOS[1] = screen->h / 2;
+
+		w = screen->w;
+		h = screen->h;
+
+		logoRect = createProjectedObject(w / 2, h / 2, w / 2, w / 2 * 9 / 16, false);
+		// Use this to calculate ratio
+		for (int a = 0; a < frames; a++) {
+			logoRect = projectRect(logoRect, (movePOS[0] - logoRect.projectedRect.x) / frames, 0);
+		}
+
+		firstStopRatio = logoRect.realRect.w / logoRect.projectedRect.w;
+		firstStopDistanceX = logoRect.projectedRect.x - logoRect.realRect.x;
+		firstStopDistanceY = screen->h * -yDisToH;
+
+		printf("%f %d %d\n", firstStopRatio, firstStopDistanceX, firstStopDistanceY);
+		printf("%f %f\n", screen->w, screen->h);
+		logoRect = unprojectObject(logoRect);
 
 		// Font for left side
 		firstStopFont = TTF_CopyFont(smallFont);
@@ -154,6 +184,7 @@ int drawTitle(int state) {
 		quitTxt = TTF_CreateText(textEngine, smallFont, "Quit", strlen("Quit"));
 		selectTxt = TTF_CreateText(textEngine, firstStopFont, "Select", strlen("Select"));
 		backTxt = TTF_CreateText(textEngine, firstStopFont, "Back", strlen("Back"));
+		playTxt = TTF_CreateText(textEngine, firstStopFont, "Play", strlen("Play"));
 
 		for (int a = 0; a < VIDEO_COUNT; a++) {
 			int imgIndex = rand() % filesNum;
@@ -181,8 +212,8 @@ int drawTitle(int state) {
 			exit(1);
 		}
 
-		difficultyRects = malloc(sizeof(ProjectedObject) * difficultyCount);
-		buttonDifficulty = malloc(sizeof(ProjectedObject) * difficultyCount);
+		difficultyRects = malloc(sizeof(ProjectedObject) * selectScreenRects);
+		buttonDifficulty = malloc(sizeof(ProjectedObject) * selectScreenRects);
 
 		if (difficultyRects == NULL || buttonDifficulty == NULL) {
 			fprintf(stderr, "%s\n", "Allocation for difficulties failed");
@@ -190,16 +221,11 @@ int drawTitle(int state) {
 			exit(1);
 		}
 
-		logoPOS[0] = screen->w / 2;
-		logoPOS[1] = screen->h / 2;
 
 		// Good way to signal that they are not initialized
 		xPos[0][0] = INT_MAX;
-		w = screen->w;
-		h = screen->h;
 
 		// Starting values of the logos
-		logoRect = createProjectedObject(logoPOS[0], logoPOS[1], w / 2, w / 2 * 9 / 16, false);
 		startLogo = createProjectedObject(w / 2 - (w / 8), h * 7 / 8, w / 6, h / 6, true);
 		quitLogo = createProjectedObject(w / 2 + (w / 8), h * 7 / 8, w / 6, h / 6, true);
 		backLogo = createProjectedObject(w / 2 - (w / 8) - firstStopDistanceX, h * 7 / 8 - firstStopDistanceY, w / 6 * firstStopRatio, h / 6 * firstStopRatio, true);
@@ -220,13 +246,13 @@ int drawTitle(int state) {
 			pfpRects[a]= createProjectedObject(rectArray[a].realRect.x + (h / 16), pfpY, h / 16, h / 16, true);
 		}
 
-		// The difficulty select assets
-		for (int a = 0; a < difficultyCount; a++) {
 
-			float width = w / 6 * firstStopRatio;
+		float width = w / 6 * firstStopRatio;
+		float height = width * 9 / 16;
+		// The difficulty select assets
+		for (int a = 0; a < selectScreenRects; a++) {
 			float x = w * 3 / 10 + (w / 3 * (a % 2)) - ((firstStopDistanceX));
-			float y =  (h * 5 / 8 * ((int)((float)a / difficultyCount * ceil(difficultyCount / 2.0f))) - firstStopDistanceY);
-			float height = width * 9 / 16;
+			float y =  (h * 5 / 8 * ((int)((float)a / selectScreenRects * ceil(selectScreenRects / 2.0f))) - firstStopDistanceY);
 
 			difficultyRects[a] = createProjectedObject(x, y, width, height, true);
 
@@ -237,11 +263,44 @@ int drawTitle(int state) {
 		}
 
 		// Explanation is formatted with the difficulties
-		float expX = (difficultyRects[1].realRect.x + (w / 3 * 2) + (w / 8) - firstStopDistanceX) / firstStopRatio;
-		float expY = (difficultyRects[1].realRect.y - firstStopDistanceY + expOffset) / firstStopRatio;
+		float expX = (difficultyRects[1].realRect.x + (w * 17 / 8) / firstStopRatio);
+		float expY = (difficultyRects[1].realRect.y  + (h * 7 / 2) - firstStopDistanceY + expOffset) / firstStopRatio;
 		//printf("%f %f\n", expX, expY);
-		explanationRect = createProjectedObject(expX, expY, (w / 4) * firstStopRatio, h * 3 / 4 * firstStopRatio, false);
+		explanationRect = createProjectedObject(expX, expY, (w / 4) * firstStopRatio, h * 3 / 4 * firstStopRatio, true);
 
+		float beginX = explanationRect.realRect.x +  ((w / 8  + (width / 4)) / firstStopRatio);
+		float beginY = explanationRect.realRect.y + (explanationRect.realRect.h) + (h / 16);
+		beginGameLogo = createProjectedObject(beginX, beginY, width / 2, height / 2, false);
+	}
+
+	// Turns the projected rects back to their real size
+	if (state == titleToNormal) {
+		startLogo = unprojectObject(startLogo);
+		quitLogo = unprojectObject(quitLogo);
+		backLogo = unprojectObject(backLogo);
+		logoRect = unprojectObject(logoRect);
+
+		// Also gotta undo real movements for these ones
+		explanationRect.realRect.y += expOffset / 2;
+		beginGameLogo.realRect.y += expOffset / 2;
+
+		explanationRect = unprojectObject(explanationRect);
+		beginGameLogo = unprojectObject(beginGameLogo);
+
+		// The rare i lol
+		for (int i = 0; i < VIDEO_COUNT; i++) {
+			rectArray[i] = unprojectObject(rectArray[i]);
+			pfpRects[i] = unprojectObject(pfpRects[i]);
+		}
+
+		for (int i = 0; i < selectScreenRects; i++) {
+			difficultyRects[i] = unprojectObject(difficultyRects[i]);
+			buttonDifficulty[i] = unprojectObject(buttonDifficulty[i]);
+		}
+
+		isDiff = false;
+		gameAttr->state = normal;
+		return normal;
 	}
 
 	// The transition from title to main game.
@@ -261,6 +320,9 @@ int drawTitle(int state) {
 
 		TTF_DestroyText(startTxt);
 		TTF_DestroyText(quitTxt);
+		TTF_DestroyText(selectTxt);
+		TTF_DestroyText(backTxt);	
+		
 		free(files);
 		free(thumbnailFiles);
 		free(pfpImgs);
@@ -310,15 +372,17 @@ int drawTitle(int state) {
 		// We move this for real cause u can see it at start otherwise
 		if (!isDiff) {
 			explanationRect.realRect.y -= expOffset / frames / 2;
+			beginGameLogo.realRect.y -= expOffset / frames / 2;
 		}
 		else {
 			explanationRect.realRect.y += expOffset / frames / 2;
+			beginGameLogo.realRect.y += expOffset / frames / 2;
 		}
 
 		startLogo = projectRect(startLogo, xDifference, yDifference);
 		quitLogo = projectRect(quitLogo, xDifference, yDifference);
 		explanationRect = projectRect(explanationRect, xDifference, yDifference);
-
+		beginGameLogo = projectRect(beginGameLogo, xDifference, yDifference);
 		/*zoomOutTxt(changingSmallFont, logoRect.realRect.x, logoRect.projectedRect.x + xDifference);*/
 
 
@@ -341,9 +405,9 @@ int drawTitle(int state) {
 			if (!isDiff) state = titleDiff;
 			else state = title;
 
+			printf("%f\n", logoRect.projectedRect.x - logoRect.realRect.x);
 			isDiff = !isDiff;
 		}
-
 		count = 0;
 	}
 
@@ -375,7 +439,7 @@ int drawTitle(int state) {
 			rectArray[a] = projectRect(rectArray[a], xDifference, yDifference);
 			pfpRects[a] = projectRect(pfpRects[a], xDifference, yDifference);
 
-			if (a < difficultyCount) {
+			if (a < selectScreenRects) {
 				difficultyRects[a] = projectRect(difficultyRects[a], xDifference, yDifference);
 				buttonDifficulty[a] = projectRect(buttonDifficulty[a], xDifference, yDifference);
 			}
@@ -412,9 +476,9 @@ int drawTitle(int state) {
 
 	int x, y;
 
-	for (int a = 0; a < difficultyCount; a++) {
+	for (int a = 0; a < selectScreenRects; a++) {
 		// Final entry is a logo 
-		if (a != 7) {
+		if (a != selectScreenRects - 1) {
 			SDL_RenderRect(renderer, &(difficultyRects[a].projectedRect));
 			drawSmoothRectagle(buttonDifficulty[a].projectedRect, wineColor.r, wineColor.g, wineColor.b, wineColor.a, buttonDifficulty[a].projectedRect.w / 6);
 			displayTextAsSurface(buttonDifficulty[a], selectTxt);
@@ -438,8 +502,16 @@ int drawTitle(int state) {
 
 	displayTextAsSurface(startLogo, startTxt);
 	displayTextAsSurface(quitLogo, quitTxt);
+	
+	// Can only start once difficulty selected
+	if (difficulty != -1)  {
+		drawSmoothRectagle(beginGameLogo.projectedRect, wineColor.r, wineColor.g, wineColor.b, wineColor.a, beginGameLogo.projectedRect.w / 6);
+		displayTextAsSurface(beginGameLogo, playTxt);
+	}
 
 	// Button that takes us back to the main menu from the difficulty select
-	diffToTitle = buttonDifficulty[7].projectedRect;
+	diffToTitle = buttonDifficulty[selectScreenRects - 1].projectedRect;
+	diffToPlay = beginGameLogo.projectedRect;
+	diffSelect = buttonDifficulty;
 	return state;
 }

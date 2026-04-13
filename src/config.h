@@ -45,6 +45,9 @@
 // The state which the game starts at
 #define DEFAULT_GAME_STATE title
 
+// Number of difficulties (including standard)
+#define DIFFICULTY_COUNT 7
+
 // The difficulty which the game starts at.
 #define DEFAULT_DIFFICULTY standard
 
@@ -74,6 +77,9 @@
 #define FOCAL 300	
 
 #define BASE_Z 600
+
+// This helps keep the zoom effect the same (like 3.02 rn) across different screen sizes
+#define THIS_IS_A_CERTIFIED_CLASSIC 3827.39f
 
 
 #endif // !CONFIG_H_

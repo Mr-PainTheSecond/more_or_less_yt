@@ -60,7 +60,7 @@ typedef struct projectedObject {
 	SDL_FRect projectedRect;
 } ProjectedObject;
 
-enum states {title, titleAni, titleDiff, normal,
+enum states {title, titleAni, titleDiff, titleToNormal, normal,
 	moreRight, moreWrong, lessRight, lessWrong, 
 	justQuit, justLost, justWon, gameOver, gameWon, shutDown};
 enum toggles {enableW = 1, enableS, disableEsc, enableEsc, disableS, disableW};
@@ -73,7 +73,10 @@ TTF_Font* smallFont;
 TTF_Font* moreLessFont;
 TTF_Font* timerFont;
 TTF_Font* ytFont;
+
 SDL_FRect diffToTitle;
+SDL_FRect diffToPlay;
+ProjectedObject* diffSelect;
 int difficulty;
 TTF_TextEngine* textEngine;
 Queue* ytQueue;

@@ -251,6 +251,9 @@ void handleMouseClick(SDL_MouseButtonEvent button, bool* aboutToQuit, int* timeC
 	SDL_FRect menuRect = createRect(screen->w * 7 / 8, screen->h / 2 - (screen->h / 6), screen->w / 6, screen->h / 6, true);
 	// Title Difficulty Select
 	SDL_FRect backRect = diffToTitle;
+	SDL_FRect playRect = diffToPlay;
+	// Obj instead of rect cause I am lazy
+	ProjectedObject* diffRects = diffSelect;	
 
 	// When state is normal, we will process as a guess
 	if (gameAttr->state == normal) {
@@ -296,9 +299,26 @@ void handleMouseClick(SDL_MouseButtonEvent button, bool* aboutToQuit, int* timeC
 		gameAttr->state = normal;
 	}
 	else if (gameAttr->state == titleDiff) {
+		printf("Hello\n");
 		if (isPressed(event.button, backRect)) {
 			gameAttr->state = titleAni;
+			difficulty = -1;
 			printf("It is pressed\n");
+			// Can technically be pressed when invisible, so ignore it if it is
+		} else if (isPressed(event.button, playRect) && difficulty != -1) {
+			gameAttr->state = titleToNormal;
+			printf("It is pressed\n");
+		}
+		else {
+			printf("Hello\n");
+			for (int a = 0; a < DIFFICULTY_COUNT; a++) {
+				printf("%f\n", diffRects[a].projectedRect.x);
+				if (isPressed(event.button, diffRects[a].projectedRect)) {
+					printf("Hola\n");
+					difficulty = a;
+					break;
+				}
+			}
 		}
 	}
 }
@@ -343,8 +363,8 @@ int main() {
 	ytRed.g = 0;
 	ytRed.b = 51;
 	ytRed.a = SDL_ALPHA_OPAQUE;
-	// Standard unless debugging
-	difficulty = DEFAULT_DIFFICULTY;
+	// Start at -1 to signal no difficulty has been selected
+	difficulty = -1;
 	if (moreText == NULL || lessText == NULL) {
 		printf(SDL_GetError());
 		quit(ytQueue);
