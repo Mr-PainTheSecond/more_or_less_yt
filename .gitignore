@@ -379,3 +379,5 @@ FodyWeavers.xsd
 
 # For Python files that are not part of running the server
 *_ignore.py
+# One time use file
+/server/generate.py
