@@ -82,6 +82,7 @@ game.*/
 int drawTitle(int state) {
 	static SDL_Texture** pfpImgs = NULL;
 	static SDL_Texture** thumbnailImgs = NULL;
+	static SDL_Texture* difficultyImgs[DIFFICULTY_COUNT];
 
 	static TTF_Text* startTxt = NULL;
 	static TTF_Text* quitTxt = NULL;
@@ -127,11 +128,6 @@ int drawTitle(int state) {
 	
 	static float screenWrap = -1;
 
-	// The point where the thumbnails will wrap around
-	if (screenWrap < 0) {
-		screenWrap = firstStopDistanceX;
-	}
-
 	float expOffset = screen->h * 7 / 4;
 	const int selectScreenRects = DIFFICULTY_COUNT + 1;
 
@@ -172,8 +168,10 @@ int drawTitle(int state) {
 		firstStopDistanceX = logoRect.projectedRect.x - logoRect.realRect.x;
 		firstStopDistanceY = screen->h * -yDisToH;
 
-		printf("%f %d %d\n", firstStopRatio, firstStopDistanceX, firstStopDistanceY);
-		printf("%f %f\n", screen->w, screen->h);
+		// The point where the thumbnails will wrap around
+		screenWrap = firstStopDistanceX;
+		/*printf("%f %d %d\n", firstStopRatio, firstStopDistanceX, firstStopDistanceY);
+		printf("%f %f\n", screen->w, screen->h);*/
 		logoRect = unprojectObject(logoRect);
 
 		// Font for left side
@@ -196,6 +194,36 @@ int drawTitle(int state) {
 			SDL_DestroySurface(pfpSurf);
 			SDL_DestroySurface(thumbnailSurf);
 		}
+
+		char** diffLocations = malloc(sizeof(char*) * DIFFICULTY_COUNT);
+
+		for (int a = 0; a < DIFFICULTY_COUNT; a++) {
+			// One for the digit, one for the null terminator
+			diffLocations[a] = malloc(sizeof(char) * (strlen("..\\assets\\images\\perm\\other\\difficulty_.PNG")) + (sizeof(char) * 2));
+
+			diffLocations[a] = converToStr(a);
+		}
+
+		if (diffLocations == NULL) {
+			fprintf(stderr, "%s\n", "Allocation for difficulty imgs failed :(");
+			quit(ytQueue);
+			exit(1);
+		}
+		// All the difficulty imgs follow same format
+		formatAsFileLocation("..\\assets\\images\\perm\\other\\difficulty_", ".PNG", diffLocations, DIFFICULTY_COUNT);
+
+		printf("%s\n", diffLocations[0]);
+
+		for (int a = 0; a < DIFFICULTY_COUNT; a++) {
+			SDL_Surface* diffSurf = IMG_Load(diffLocations[a]);
+			
+			difficultyImgs[a] = SDL_CreateTextureFromSurface(renderer, diffSurf);
+
+
+
+			SDL_DestroySurface(diffSurf);
+		}
+
 
 		// This will store all the rectangles which will contains the videos
 		rectArray = malloc(sizeof(ProjectedObject) * VIDEO_COUNT);
@@ -472,6 +500,7 @@ int drawTitle(int state) {
 		
 	}
 
+
 	SDL_SetRenderDrawColor(renderer, 128, 128, 128, SDL_ALPHA_OPAQUE);
 
 	int x, y;
@@ -479,10 +508,16 @@ int drawTitle(int state) {
 	for (int a = 0; a < selectScreenRects; a++) {
 		// Final entry is a logo 
 		if (a != selectScreenRects - 1) {
-			SDL_RenderRect(renderer, &(difficultyRects[a].projectedRect));
-			drawSmoothRectagle(buttonDifficulty[a].projectedRect, wineColor.r, wineColor.g, wineColor.b, wineColor.a, buttonDifficulty[a].projectedRect.w / 6);
-			displayTextAsSurface(buttonDifficulty[a], selectTxt);
+			if (inBounds(difficultyRects[a].projectedRect)) {
+				SDL_RenderTexture(renderer, difficultyImgs[a], NULL, &(difficultyRects[a].projectedRect));	
+			}
+
+			if (inBounds(buttonDifficulty[a].projectedRect)) {
+				drawSmoothRectagle(buttonDifficulty[a].projectedRect, wineColor.r, wineColor.g, wineColor.b, wineColor.a, buttonDifficulty[a].projectedRect.w / 6);
+				displayTextAsSurface(buttonDifficulty[a], selectTxt);
+			}
 		}
+		// All have in bound checks interally
 		else {
 			drawLogo((difficultyRects[a].projectedRect.x), (difficultyRects[a].projectedRect.y), (difficultyRects[a].projectedRect.w), false);
 			// Giving it a different color so it stands out

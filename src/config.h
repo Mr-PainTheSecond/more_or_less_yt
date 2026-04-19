@@ -34,7 +34,7 @@
 #define FONT_OFFSET 3840.0f
 
 // How many videos are loaded into the start screen
-#define VIDEO_COUNT 30
+#define VIDEO_COUNT 36
 
 // The amount of levels found in the title screen thumbnails
 #define LEVEL_COUNT 6	
