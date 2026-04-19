@@ -26,11 +26,12 @@ except ImportError:
     sys.exit(0)
 
 class YouTubeData():
-    def __init__(self, firstIndex):
+    def __init__(self, firstIndex = 0, path = "..\\assets\\images\\temp\\", storage = "storage.txt"):
         self.threads: list[threading.Thread] = list()
         self.urls = []
         self.lock = threading.Lock()
-        self.path = "..\\assets\\images\\temp\\"
+        self.path = path
+        self.storage = storage
         self.indexes = []
         self.noConnection = False
 
@@ -44,6 +45,7 @@ class YouTubeData():
         load_dotenv()
         self.youtube = google.build("youtube", "v3", developerKey=os.getenv("YOUTUBE_API"))
         os.chdir("server\\")
+        
 
     def downloadThumbnail(self, url, count, index):
         thumnailUrl = self.getThumnbnailUrl(url, count, index)
@@ -54,7 +56,7 @@ class YouTubeData():
             file.write(rResponse.content)
             with self.lock:
                 self.filesNames[index] = f"{self.path}test{count}.png"
-                utilities.writeData("storage.txt", self, index)
+                utilities.writeData(self.storage, self, index)
                 
         
         
@@ -164,11 +166,14 @@ class YouTubeData():
         result = self.cursor.fetchall()
         self.getFromYoutube(result)
     
-    def getData(self):
+    def getData(self, count = 30):
+        a = 0
+        
+        # Database stuff
         self.connection = sqlite3.connect("youtube.db")
         self.cursor = self.connection.cursor()
-        a = 0
-        for i in range(30):
+        
+        for i in range(count):
             self.handleCategory()
             if globals.args == "view_test":
                 try:
@@ -206,6 +211,8 @@ class YouTubeData():
             
         if globals.args != "fill":
             network.join()    
+        
+        print("Main Network has finished")
         
         # Once the main server is done, we will do backup
         if globals.args != "fill":
@@ -270,7 +277,27 @@ if __name__ == "__main__":
     repetitions = 0
     while globals.serverRunning:
         dataManager = YouTubeData(firstIndex)
-        dataManager.getData()
+        
+        # Data Collection takes time!!
+        serverBuffer = threading.Thread(None, messageManager.findConnection, args = ([], True,  ))
+        dataCollector = threading.Thread(None, dataManager.getData)
+        
+        globals.downloadComplete = False
+        
+        if globals.args != "fill":
+            serverBuffer.start()
+        
+        dataCollector.start()
+        
+        
+        dataCollector.join()
+        
+        with dataManager.lock:
+            globals.downloadComplete = True
+        
+        if globals.args != "fill":
+            serverBuffer.join()
+        
         dataManager.getThumbnails()
         dataManager.clearAllLists()
         firstIndex = (len(dataManager.filesNames) + firstIndex) % 100

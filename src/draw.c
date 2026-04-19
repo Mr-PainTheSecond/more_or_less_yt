@@ -49,8 +49,8 @@ void drawFinalScreen() {
 	static TTF_Text* quitTxt;
 	// Keep track of previous state to swap assets
 	static int previousState = 0;
-	int w = screen->w;
-	int h = screen->h;
+	float w = screen->w;
+	float h = screen->h;
 	// The game is ending. Free all the assets and return
 	if (gameAttr->state == shutDown) {
 		if (background != NULL) {
@@ -116,7 +116,7 @@ int draw(TTF_Text* more, TTF_Text* less, Queue* queue) {
 	SDL_SetRenderDrawColor(renderer, 128, 0, 32, SDL_ALPHA_OPAQUE);
 	SDL_RenderClear(renderer);
 
-	if (gameAttr->state == title  || gameAttr->state == shutDown) {
+	if (gameAttr->state >= title && gameAttr->state <= titleToNormal  || gameAttr->state == shutDown) {
 		gameAttr->state = drawTitle(gameAttr->state);
 	}
 

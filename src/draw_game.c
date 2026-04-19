@@ -392,7 +392,7 @@ int drawMoreOrLess(TTF_Text* moreTxt, TTF_Text* lessTxt, Queue* queue) {
 	drawRectangle(&moreImg, 128, 128, 128, SDL_ALPHA_OPAQUE, true);
 	drawRectangle(&lessImg, 0, 0, 0, SDL_ALPHA_OPAQUE, true);
 	drawRectangle(&hiddenImg, 0, 0, 0, SDL_ALPHA_OPAQUE, true);
-	drawLogo(w / 2, h / 16, w / 8);
+	drawLogo(w / 2, h / 16, w / 8, true);
 	// The Rectangle that says "More"
 	drawRectangle(&more, 0, 83, 10, SDL_ALPHA_OPAQUE, true);
 	drawRectangle(&hiddenMore, 0, 83, 10, SDL_ALPHA_OPAQUE, true);
