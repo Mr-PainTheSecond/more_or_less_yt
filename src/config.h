@@ -34,13 +34,19 @@
 #define FONT_OFFSET 3840.0f
 
 // How many videos are loaded into the start screen
-#define VIDEO_COUNT 10
+#define VIDEO_COUNT 36
+
+// The amount of levels found in the title screen thumbnails
+#define LEVEL_COUNT 6	
 
 // How fast does the transition phase last
 #define TRANSITION_GUESS_SPEED 100
 
 // The state which the game starts at
 #define DEFAULT_GAME_STATE title
+
+// Number of difficulties (including standard)
+#define DIFFICULTY_COUNT 7
 
 // The difficulty which the game starts at.
 #define DEFAULT_DIFFICULTY standard
@@ -65,6 +71,16 @@
 
 // Debug feature: Immune to losing lives. (not to time out)
 #define LIFE_IMMUNITY 0
+
+#define ZOOM_EFFECT 0.5f
+
+#define FOCAL 300	
+
+#define BASE_Z 600
+
+// This helps keep the zoom effect the same (like 3.02 rn) across different screen sizes
+#define THIS_IS_A_CERTIFIED_CLASSIC 3827.39f
+
 
 #endif // !CONFIG_H_
 

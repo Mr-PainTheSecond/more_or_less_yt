@@ -22,6 +22,7 @@
     <ClCompile Include="..\src\draw.c" />
     <ClCompile Include="..\src\draw_game.c" />
     <ClCompile Include="..\src\draw_shape.c" />
+    <ClCompile Include="..\src\draw_title.c" />
     <ClCompile Include="..\src\font.c" />
     <ClCompile Include="..\src\main.c" />
     <ClCompile Include="..\src\server.c" />
@@ -33,6 +34,7 @@
     <ClInclude Include="..\src\draw.h" />
     <ClInclude Include="..\src\draw_game.h" />
     <ClInclude Include="..\src\draw_shape.h" />
+    <ClInclude Include="..\src\draw_title.h" />
     <ClInclude Include="..\src\font.h" />
     <ClInclude Include="..\src\globals.h" />
     <ClInclude Include="..\src\server.h" />

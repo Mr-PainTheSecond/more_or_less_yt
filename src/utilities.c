@@ -57,6 +57,14 @@ char* choiceStr(char** array, int size) {
 	return array[randNum];
 }
 
+/*Takes two points and space, and return a float such that
+the distance between the overall distance between the 
+two points are the same, but the x and y components are equal*/
+float normalize(float x1, float y1, float x2, float y2) {
+	float distance = sqrt(pow(x2 - x1, 2) + pow(y2 - y1, 2));
+	return distance * sin(M_PI_4);
+}
+
 /*Takes a double char pointer, and concanates with fileOne and fileTwo to become a valid file
 location. fileOne is everything before each file and fileTwo is everything afterwards
 fileOne and fileTwo can be NULL, but both being NULL would do nothing*/

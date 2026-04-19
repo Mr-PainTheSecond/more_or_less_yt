@@ -4,6 +4,8 @@
 #include "commons.h"
 #include "globals.h"
 #include "utilities.h"
+#include "draw_shape.h"
+
 void createFontArray();
 char* format(char* original, const char* suffix);
 void freeFontArray();
@@ -15,4 +17,7 @@ void destroyDynamicText(DynamicText* dmTxt);
 void get_text_center(SDL_FRect rect, TTF_Text* text, int* x, int* y);
 
 void displayText(SDL_FRect rect, TTF_Text* txt, int* x, int* y);
+void zoomOutTxt(TTF_Font* oldFont, float oldX, float newX);
+
+void displayTextAsSurface(ProjectedObject obj, TTF_Text* txt);
 #endif

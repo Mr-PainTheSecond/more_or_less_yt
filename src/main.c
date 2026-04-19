@@ -240,14 +240,22 @@ void updateScreen(TTF_Font** moreLessFont, bool fullScreen) {
 
 /*Will handles all cases whenever the left button is clicked*/
 void handleMouseClick(SDL_MouseButtonEvent button, bool* aboutToQuit, int* timeClocked, int* counter) {
+	// Main Game
 	SDL_FRect more = createRect(screen->w / 2, screen->h / 2, screen->w / 4, screen->h / 8, true);
 	SDL_FRect less = createRect(screen->w / 2, screen->h * 5 / 8, screen->w / 4, screen->h / 8, true);
+	// Initial title screen
 	SDL_FRect startLogo = createRect(screen->w / 2 - (screen->w / 8), screen->h * 7 / 8, screen->w / 6, screen->h / 6, true);
 	SDL_FRect quitLogo = createRect(screen->w / 2 + (screen->w / 8), screen->h * 7 / 8, screen->w / 6, screen->h / 6, true);
+	// Win/Lose Screen
 	SDL_FRect quitRectWin = createRect(screen->w * 7 / 8, screen->h / 2 + (screen->h / 6), screen->w / 6, screen->h / 6, true);
 	SDL_FRect menuRect = createRect(screen->w * 7 / 8, screen->h / 2 - (screen->h / 6), screen->w / 6, screen->h / 6, true);
+	// Title Difficulty Select
+	SDL_FRect backRect = diffToTitle;
+	SDL_FRect playRect = diffToPlay;
+	// Obj instead of rect cause I am lazy
+	ProjectedObject* diffRects = diffSelect;	
 
-	// When state is normal, we will presses as a guess
+	// When state is normal, we will process as a guess
 	if (gameAttr->state == normal) {
 		if (isPressed(event.button, more)) {
 			gameAttr->score = moreOrLess(true, ytQueue, gameAttr->score, &gameAttr->state);
@@ -269,7 +277,7 @@ void handleMouseClick(SDL_MouseButtonEvent button, bool* aboutToQuit, int* timeC
 		if (gameAttr->state == title) {
 			gameTrans = startLogo;
 			gameQuit = quitLogo;
-			newState = normal;
+			newState = titleAni;
 		}
 		else {
 			gameTrans = menuRect;
@@ -289,6 +297,29 @@ void handleMouseClick(SDL_MouseButtonEvent button, bool* aboutToQuit, int* timeC
 	// Allows user to skip the animantion
 	else if (gameAttr->state >= moreRight && gameAttr->state <= lessWrong) {
 		gameAttr->state = normal;
+	}
+	else if (gameAttr->state == titleDiff) {
+		printf("Hello\n");
+		if (isPressed(event.button, backRect)) {
+			gameAttr->state = titleAni;
+			difficulty = -1;
+			printf("It is pressed\n");
+			// Can technically be pressed when invisible, so ignore it if it is
+		} else if (isPressed(event.button, playRect) && difficulty != -1) {
+			gameAttr->state = titleToNormal;
+			printf("It is pressed\n");
+		}
+		else {
+			printf("Hello\n");
+			for (int a = 0; a < DIFFICULTY_COUNT; a++) {
+				printf("%f\n", diffRects[a].projectedRect.x);
+				if (isPressed(event.button, diffRects[a].projectedRect)) {
+					printf("Hola\n");
+					difficulty = a;
+					break;
+				}
+			}
+		}
 	}
 }
 
@@ -332,8 +363,8 @@ int main() {
 	ytRed.g = 0;
 	ytRed.b = 51;
 	ytRed.a = SDL_ALPHA_OPAQUE;
-	// Standard unless debugging
-	difficulty = DEFAULT_DIFFICULTY;
+	// Start at -1 to signal no difficulty has been selected
+	difficulty = -1;
 	if (moreText == NULL || lessText == NULL) {
 		printf(SDL_GetError());
 		quit(ytQueue);
@@ -379,7 +410,7 @@ int main() {
 					if (gameAttr->state >= normal && gameAttr->state <= gameWon) {
 						gameAttr->state = justQuit;
 					}
-					else if (gameAttr->state == title) {
+					else if (gameAttr->state == title || gameAttr->state == titleDiff) {
 						gameAttr->state = shutDown;
 						aboutToQuit = true;
 					}
@@ -494,13 +525,13 @@ int main() {
 			}
 		}
 		
+		gameAttr->state = draw(moreText, lessText, ytQueue);
+
 		clock_t finishTime = clock();
 		// Enforce the FPS
 		while (finishTime - currentTime < frameRateinMs(FRAME_RATE)) {
 			finishTime = clock();
 		}
-    
-		gameAttr->state = draw(moreText, lessText, ytQueue);
 
 		if (gameAttr->score < 0) {
 			gameAttr->score = 0;

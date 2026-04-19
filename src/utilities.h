@@ -31,6 +31,8 @@ void copyDymTxt(DynamicText* dstTxt, DynamicText* srcTxt);
 
 time_t frameRateinMs(int frameRate);
 
+float normalize(float x1, float y1, float x2, float y2);
+
 void quit(Queue* queue);
 
 #endif // !UTILITIES_H_

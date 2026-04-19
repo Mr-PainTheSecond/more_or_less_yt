@@ -36,6 +36,9 @@
     <ClCompile Include="..\src\draw_game.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\draw_title.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\commons.h">
@@ -66,6 +69,9 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="..\src\draw_game.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\draw_title.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

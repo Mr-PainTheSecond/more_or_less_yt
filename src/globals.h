@@ -8,8 +8,8 @@
 SDL_Renderer* renderer;
 SDL_Window* window;
 typedef struct screen {
-	int w;
-	int h;
+	float w;
+	float h;
 	SDL_DisplayID id;
 	SDL_Surface* surface;
 } Screen;
@@ -44,13 +44,23 @@ typedef struct dText {
 	char* str;
 } DynamicText;
 
+typedef struct vector2D {
+	float x;
+	float y;
+} Vector2D;
+
 typedef struct queue {
 	YTNode* front;
 	YTNode* back;
 	int size;
 } Queue;
 
-enum states {title, normal,
+typedef struct projectedObject {
+	SDL_FRect realRect;
+	SDL_FRect projectedRect;
+} ProjectedObject;
+
+enum states {title, titleAni, titleDiff, titleToNormal, normal,
 	moreRight, moreWrong, lessRight, lessWrong, 
 	justQuit, justLost, justWon, gameOver, gameWon, shutDown};
 enum toggles {enableW = 1, enableS, disableEsc, enableEsc, disableS, disableW};
@@ -65,6 +75,10 @@ TTF_Font* smallFont;
 TTF_Font* moreLessFont;
 TTF_Font* timerFont;
 TTF_Font* ytFont;
+
+SDL_FRect diffToTitle;
+SDL_FRect diffToPlay;
+ProjectedObject* diffSelect;
 int difficulty;
 TTF_TextEngine* textEngine;
 Queue* ytQueue;
