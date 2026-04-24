@@ -17,6 +17,7 @@ void destroyDynamicText(DynamicText* dmTxt);
 void get_text_center(SDL_FRect rect, TTF_Text* text, int* x, int* y);
 
 void displayText(SDL_FRect rect, TTF_Text* txt, int* x, int* y);
+TTF_Text** wrapText(TTF_Text* msg, float containerW, int* count);
 void zoomOutTxt(TTF_Font* oldFont, float oldX, float newX);
 
 void displayTextAsSurface(ProjectedObject obj, TTF_Text* txt);

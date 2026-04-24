@@ -65,6 +65,199 @@ float normalize(float x1, float y1, float x2, float y2) {
 	return distance * sin(M_PI_4);
 }
 
+/*Takes a JSON file and an array of objects, and returns an array
+formatted as [object][entry]. Only takes string entries*/
+char*** readJSONArray(const char* fileName, const char* array, int* objCount, int** entries) {
+	FILE* jsonFile = fopen(fileName, "r");
+	printf("%s\n", "HELLO");
+	if (jsonFile == NULL) {
+		fprintf(stderr, "%s\n", "Something has gone wrong with the JSON file/doesn't exist");
+		quit(ytQueue);
+		exit(1);
+	}
+
+	char buffer[100];
+	char newItem = ',';
+	char presentItem = ':';
+
+	char*** data = malloc(sizeof(char**) * 20000);
+	if (data == NULL) {
+		fprintf(stderr, "%s\n", "Something went wrong with first array");
+		quit(ytQueue);
+		exit(1);
+	}
+
+	*entries = malloc(sizeof(int) * 20000);
+	if (*entries == NULL) {
+		fprintf(stderr, "%s\n", "Entry array failed to initialize");
+		quit(ytQueue);
+		exit(1);
+	}
+
+	char newChar = fgetc(jsonFile);
+	bool foundArray = false;
+	bool potentialArray = false;
+	printf("%s\n", "Setup was good");
+
+	while (!foundArray){
+		if (newChar == EOF) {
+			fprintf(stderr, "%s\n", "Array not found in JSON");
+			quit(ytQueue);
+			exit(1);
+		}
+
+		if (newChar == '"') {
+			printf("%s\n", "Found potential array");
+			char tempBuffer[100];
+			int charCount = 0;
+			newChar = fgetc(jsonFile);
+			while (newChar != '"' && newChar != EOF) {
+				tempBuffer[charCount] = newChar;
+				charCount++;
+				newChar = fgetc(jsonFile);
+			}
+			tempBuffer[charCount] = '\0';
+			if (strcmp(tempBuffer, array) == 0) {
+				foundArray = true;
+			}
+		}
+
+		newChar = fgetc(jsonFile);
+	}
+
+	printf("%s\n", "Found array in JSON");
+	// We are gonna find our first entry
+	while (newChar != '{' && newChar != EOF) {
+		newChar = fgetc(jsonFile);
+	}
+
+	if (newChar == EOF) {
+		fprintf(stderr, "%s\n", "Array not found in JSON");
+		quit(ytQueue);
+		exit(1);
+	}
+
+	int entryCount = 0;
+	bool moreEntries = true;
+
+	while (moreEntries) {
+		data[entryCount] = malloc(sizeof(char*) * 20000);
+
+		if (data[entryCount] == NULL) {
+			fprintf(stderr, "%s\n", "Something went wrong with second array");
+			quit(ytQueue);
+			exit(1);
+		}
+
+		int itemCount = 0;
+
+		// Reads one object in the array
+		while (newChar != '}' && newChar != EOF) {
+			newChar = fgetc(jsonFile);
+
+			while(newChar != ':' && newChar != '}') {
+				newChar = fgetc(jsonFile);
+				if (newChar == EOF) {
+					fprintf(stderr, "%s\n", "Array not found in JSON");
+					quit(ytQueue);
+					exit(1);
+				}
+			}
+
+			// End of object
+			if (newChar == '}') {
+				break;
+			}
+
+			while (newChar != '"') {
+				newChar = fgetc(jsonFile);
+				if (newChar == EOF) {
+					fprintf(stderr, "%s\n", "Array not found in JSON");
+					quit(ytQueue);
+					exit(1);
+				}
+			}
+
+			char tempBuffer[100];
+			newChar = fgetc(jsonFile);
+			int charCount = 0;
+
+			// We are gonna read string only
+			while (newChar != '"' && newChar != EOF) {
+				tempBuffer[charCount] = newChar;
+				charCount++;
+				newChar = fgetc(jsonFile);
+			}
+
+			tempBuffer[charCount] = '\0';
+
+			data[entryCount][itemCount] = malloc(sizeof(char) * (charCount + 1));
+			if (data[entryCount][itemCount] == NULL) {
+				fprintf(stderr, "%s\n", "Something went wrong with third array");
+				quit(ytQueue);
+				exit(1);
+			}
+
+			strcpy(data[entryCount][itemCount], tempBuffer);
+			itemCount++;
+		}
+
+		printf("%s\n", "Finished reading entry");
+
+		char** temp = realloc(data[entryCount], sizeof(char*) * itemCount);
+		if (temp == NULL) {
+			fprintf(stderr, "%s\n", "Something went wrong with third array");
+			quit(ytQueue);
+			exit(1);
+		}
+
+		printf("The item count for this %d\n", itemCount);
+		data[entryCount] = temp;
+		(*entries)[entryCount] = itemCount;
+		printf("%d\n", (*entries)[entryCount]);
+		entryCount++;
+
+		newChar = fgetc(jsonFile);
+		// No commas? No more entries!
+		if (newChar != ',') {
+			moreEntries = false;
+		} else {
+			// We need to find the next object
+			while (newChar != '{' && newChar != EOF) {
+				newChar = fgetc(jsonFile);
+			}
+		}
+
+		if (newChar == EOF) {
+			fprintf(stderr, "%s\n", "Array ended prematurely in JSON");
+			quit(ytQueue);
+			exit(1);
+		}
+	}
+
+	fclose(jsonFile);
+	char*** temp = realloc(data, sizeof(char**) * entryCount);
+	printf("Entries in the jsoNnFile %d\n", entryCount);
+	if (temp == NULL) {
+		fprintf(stderr, "%s\n", "Something went wrong with first array");
+		quit(ytQueue);
+		exit(1);
+	}
+
+	int* intTemp = realloc(*entries, sizeof(int) * entryCount);
+	if (intTemp == NULL) {
+		fprintf(stderr, "%s\n", "Something went wrong with realloc of int entries");
+		quit(ytQueue);
+		exit(1);
+	}
+
+	*entries = intTemp;
+
+	data = temp;
+	*objCount = entryCount;
+	return data;
+}
+
 /*Takes a double char pointer, and concanates with fileOne and fileTwo to become a valid file
 location. fileOne is everything before each file and fileTwo is everything afterwards
 fileOne and fileTwo can be NULL, but both being NULL would do nothing*/
@@ -109,6 +302,12 @@ SDL_FRect get_rect_center(SDL_FRect dst, SDL_FRect src) {
 	dst.x = src.x + (src.w / 2) - (dst.w / 2);
 	dst.y = src.y + (src.h / 2) - (dst.h / 2);
 	return dst;
+}
+
+__declspec(noreturn) void errorExit(const char* msg) {
+	fprintf(stderr, "%s\n", msg);
+	quit(ytQueue);
+	exit(1);
 }
 
 
@@ -251,6 +450,37 @@ char** split(const char* str, char delimeter, int* size) {
 	words = temp;
 	*size = finalSize;
 	return words;
+}
+
+/*Given an array of string, joins them to become one string which are each seperated
+by the string specified in newChar*/
+char* join(char** arr, int lower, int upper, const char* newChar, int* newLen) {
+	*newLen = 0;
+	for (int a = lower; a <= upper; a++) {
+		*newLen += strlen(arr[a]);
+	}
+
+	// Adding the frequency of the delimeter
+	*newLen += strlen(newChar) * (upper - lower + 1);
+
+	char* newStr = malloc(sizeof(char) * (*newLen + 1));
+	if (newStr == NULL) {
+		errorExit("The new string for join failed");
+	}
+
+	strcpy(newStr, arr[lower]);
+	strcat(newStr, newChar);
+
+	for (int a = lower + 1; a <= upper; a++) {
+		strcat(newStr, arr[a]);
+		strcat(newStr, newChar);
+	}
+
+	newStr[*newLen] = '\0';
+
+	printf("%s %d\n", newStr, *newLen);
+	
+	return newStr;
 }
 
 

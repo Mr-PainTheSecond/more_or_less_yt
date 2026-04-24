@@ -33,6 +33,9 @@
 // (makes the font size dynamic)
 #define FONT_OFFSET 3840.0f
 
+// The # of videos in the assets folder
+#define UNIQUE_VIDEOS 30
+
 // How many videos are loaded into the start screen
 #define VIDEO_COUNT 36
 

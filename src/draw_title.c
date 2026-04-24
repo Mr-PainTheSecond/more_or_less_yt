@@ -70,11 +70,100 @@ ProjectedObject createProjectedObject(float x, float y, float w, float h, bool c
 	return newObj;
 }
 
+/*Given a project objects, set the projection equal
+to the real attributes, undoing projection*/
 ProjectedObject unprojectObject(ProjectedObject obj) {
 	obj.projectedRect.x = obj.realRect.x;
 	obj.projectedRect.y = obj.realRect.y;
 	obj.projectedRect.w = obj.realRect.w;
 	obj.projectedRect.h = obj.realRect.h;
+
+	return obj;
+}
+
+void createExplanationTxt(MultiLineText* explanationTxt, TTF_Font* font, char*** jsonData, int entries, SDL_FRect ref) {
+	
+	// Where the line count is placed in the JSON file
+	const int lineCountIndex = 2;
+	float wrapPoint = ref.w * 0.9f;
+
+	int textWidth = 0;
+	int textHeight = 0;
+	TTF_Text* refTxt = TTF_CreateText(textEngine, font, "a", strlen("a"));
+	TTF_GetTextSize(refTxt, &textWidth, &textHeight);
+	TTF_DestroyText(refTxt);
+
+	for (int a = 0; a < entries; a++) {
+		explanationTxt[a].lineCount = convertToInt(jsonData[a][lineCountIndex]);
+
+		int jsonLines = explanationTxt[a].lineCount;
+		// Every difficulty past one will say "All previous conditions apply"
+		if (a != 0) explanationTxt[a].lineCount++;
+
+		// New lines added by wrapping are non major
+		int majorLineCount = explanationTxt[a].lineCount;
+		printf("%d\n", explanationTxt[a].lineCount);
+
+		explanationTxt[a].lines = malloc(sizeof(TTF_Text*) * explanationTxt[a].lineCount);
+		explanationTxt[a].lineRects = malloc(sizeof(ProjectedObject) * explanationTxt[a].lineCount);
+
+		if (explanationTxt[a].lines == NULL || explanationTxt[a].lineRects == NULL) {
+			fprintf(stderr, "%s\n", "Allocation for explanation text/pos failed");
+			quit(ytQueue);
+			exit(1);
+		}
+
+		int lineIndex = 0;
+		for (int b = 0; b < jsonLines; b++) {
+			int jsonIndex = 3 + b;
+
+			char* newLine = jsonData[a][jsonIndex];
+			TTF_Text* noWrapTxt = TTF_CreateText(textEngine, font, newLine, strlen(newLine));
+
+			int divisions = 0;		
+			TTF_Text** newLines = wrapText(noWrapTxt, wrapPoint, &divisions);
+			if (divisions > 1) {
+				explanationTxt[a].lineCount += (divisions - 1);
+				TTF_Text** tempTxt = realloc(explanationTxt[a].lines, sizeof(TTF_Text*) * explanationTxt[a].lineCount);
+				ProjectedObject* tempObj = realloc(explanationTxt[a].lineRects, sizeof(ProjectedObject) * explanationTxt[a].lineCount);
+
+				if (tempTxt == NULL || tempObj == NULL) {
+					fprintf(stderr, "%s\n", "Allocation for explanation text/pos failed");
+					quit(ytQueue);
+					exit(1);
+				}
+
+				explanationTxt[a].lines = tempTxt;
+				explanationTxt[a].lineRects = tempObj;
+
+				for (int c = lineIndex; c < lineIndex + divisions; c++) {
+					explanationTxt[a].lines[c] = newLines[c - lineIndex];
+					float coolY = (ref.y + (ref.h / majorLineCount) * b) + (textHeight * (5.0f / 4.0f) * (c - lineIndex));
+					explanationTxt[a].lineRects[c] = createProjectedObject(ref.x, coolY, ref.w, ref.h / majorLineCount, false);
+				}
+
+
+				lineIndex += (divisions - 1);
+			}
+			else {
+				explanationTxt[a].lines[lineIndex] = noWrapTxt;
+				float coolY = ref.y + (ref.h / majorLineCount) * b;
+				explanationTxt[a].lineRects[lineIndex] = createProjectedObject(ref.x, coolY, ref.w, ref.h / majorLineCount, false);
+			}
+			
+
+			lineIndex++;
+		}
+
+		if (a != 0) {
+			float coolerY = ref.y + (ref.h / majorLineCount) * jsonLines;
+
+			char condMsg[] = "All previous conditions apply";
+
+			explanationTxt[a].lines[lineIndex] = TTF_CreateText(textEngine, font, condMsg, strlen(condMsg));
+			explanationTxt[a].lineRects[lineIndex] = createProjectedObject(ref.x, coolerY, ref.w, ref.h / majorLineCount, false);
+		}
+	}
 }
 
 /*Responsible for drawing the entire title section of the
@@ -91,7 +180,8 @@ int drawTitle(int state) {
 	static TTF_Text* playTxt = NULL;
 	static TTF_Font* firstStopFont = NULL;
 
-	static TTF_Text** explanationTxt = NULL;
+	// Stores the explanation for each difficulty
+	static MultiLineText explanationTxt[DIFFICULTY_COUNT];
 
 	static float xPos[2][VIDEO_COUNT];
 	static Vector2D vectorFromLogo[VIDEO_COUNT * 2];
@@ -108,6 +198,7 @@ int drawTitle(int state) {
 	static char** files;
 	static bool isDiff = false;
 
+	// The Projected Objects helps with the zoom effect
 	static ProjectedObject logoRect;
 	static ProjectedObject explanationRect;
 	static ProjectedObject beginGameLogo;
@@ -170,8 +261,8 @@ int drawTitle(int state) {
 
 		// The point where the thumbnails will wrap around
 		screenWrap = firstStopDistanceX;
-		/*printf("%f %d %d\n", firstStopRatio, firstStopDistanceX, firstStopDistanceY);
-		printf("%f %f\n", screen->w, screen->h);*/
+		
+		// Now that math is done, we need to reset the logo to its original position
 		logoRect = unprojectObject(logoRect);
 
 		// Font for left side
@@ -184,18 +275,54 @@ int drawTitle(int state) {
 		backTxt = TTF_CreateText(textEngine, firstStopFont, "Back", strlen("Back"));
 		playTxt = TTF_CreateText(textEngine, firstStopFont, "Play", strlen("Play"));
 
+		// We are gonna document what we have found since I/O is a big bottleneck
+		SDL_Surface* thumbnails[UNIQUE_VIDEOS];
+		SDL_Surface* pfps[UNIQUE_VIDEOS];
+		bool found[UNIQUE_VIDEOS];
+		for (int a = 0; a < UNIQUE_VIDEOS; a++) {
+			found[a] = false;
+			thumbnails[a] = NULL;
+			pfps[a] = NULL;
+		}
+
 		for (int a = 0; a < VIDEO_COUNT; a++) {
 			int imgIndex = rand() % filesNum;
+			// No need to load it from storage
+			if (found[imgIndex]) {
+				thumbnailImgs[a] = SDL_CreateTextureFromSurface(renderer, thumbnails[imgIndex]);
+				pfpImgs[a] = SDL_CreateTextureFromSurface(renderer, pfps[imgIndex]);
+				continue;
+			}
+
 			SDL_Surface* pfpSurf = IMG_Load(files[imgIndex]);
 			SDL_Surface* thumbnailSurf = IMG_Load(thumbnailFiles[imgIndex]);
 			pfpSurf = transformToCircle(pfpSurf);
 			pfpImgs[a] = SDL_CreateTextureFromSurface(renderer, pfpSurf);
 			thumbnailImgs[a] = SDL_CreateTextureFromSurface(renderer, thumbnailSurf);
-			SDL_DestroySurface(pfpSurf);
-			SDL_DestroySurface(thumbnailSurf);
+
+			thumbnails[imgIndex] = thumbnailSurf;
+			pfps[imgIndex] = pfpSurf;
+			found[imgIndex] = true;
+		}
+
+		for (int a = 0; a < filesNum; a++) {
+			free(files[a]);
+			free(thumbnailFiles[a]);
+		}
+
+		free(files);
+		free(thumbnailFiles);
+
+		for (int a = 0; a < UNIQUE_VIDEOS; a++) {
+			SDL_DestroySurface(pfps[a]);
+			SDL_DestroySurface(thumbnails[a]);
 		}
 
 		char** diffLocations = malloc(sizeof(char*) * DIFFICULTY_COUNT);
+
+		int objs;
+		int* items;
+
 
 		for (int a = 0; a < DIFFICULTY_COUNT; a++) {
 			// One for the digit, one for the null terminator
@@ -223,7 +350,12 @@ int drawTitle(int state) {
 
 			SDL_DestroySurface(diffSurf);
 		}
+		
+		for (int a = 0; a < DIFFICULTY_COUNT; a++) {
+			free(diffLocations[a]);
+		}
 
+		free(diffLocations);
 
 		// This will store all the rectangles which will contains the videos
 		rectArray = malloc(sizeof(ProjectedObject) * VIDEO_COUNT);
@@ -299,6 +431,22 @@ int drawTitle(int state) {
 		float beginX = explanationRect.realRect.x +  ((w / 8  + (width / 4)) / firstStopRatio);
 		float beginY = explanationRect.realRect.y + (explanationRect.realRect.h) + (h / 16);
 		beginGameLogo = createProjectedObject(beginX, beginY, width / 2, height / 2, false);
+
+		char*** jsonData = readJSONArray("..\\assets\\data\\description.json", "descriptions", &objs, &items);
+
+		for (int a = 0; a < objs; a++) {
+			printf("%d difficulty's data: ", a);
+			printf("%d\n", items[a]);
+
+			for (int b = 0; b < items[a]; b++) {
+				printf("%s, ", jsonData[a][b]);
+			}
+
+			printf("\n");
+		}
+
+
+		createExplanationTxt(explanationTxt, firstStopFont, jsonData, objs, explanationRect.realRect);
 	}
 
 	// Turns the projected rects back to their real size
@@ -326,6 +474,12 @@ int drawTitle(int state) {
 			buttonDifficulty[i] = unprojectObject(buttonDifficulty[i]);
 		}
 
+		for (int a = 0; a < DIFFICULTY_COUNT; a++) {
+			for (int b = 0; b < explanationTxt[a].lineCount; b++) {
+				unprojectObject(explanationTxt[a].lineRects[b]);
+			}
+		}
+
 		isDiff = false;
 		gameAttr->state = normal;
 		return normal;
@@ -341,9 +495,13 @@ int drawTitle(int state) {
 			}
 		}
 
-		for (int a = 0; a < filesNum; a++) {
-			free(files[a]);
-			free(thumbnailFiles[a]);
+		for (int a = 0; a < DIFFICULTY_COUNT; a++) {
+			for (int b = 0; b < explanationTxt[a].lineCount; b++) {
+				TTF_DestroyText(explanationTxt[a].lines[b]);
+			}
+
+			free(explanationTxt[a].lineRects);
+			free(explanationTxt[a].lines);
 		}
 
 		TTF_DestroyText(startTxt);
@@ -351,8 +509,6 @@ int drawTitle(int state) {
 		TTF_DestroyText(selectTxt);
 		TTF_DestroyText(backTxt);	
 		
-		free(files);
-		free(thumbnailFiles);
 		free(pfpImgs);
 		free(thumbnailImgs);
 		free(rectArray);
@@ -384,6 +540,7 @@ int drawTitle(int state) {
 			yDifference = (movePOS[1] - logoRect.projectedRect.y) / frames;
 			allXDifference[count] = xDifference;
 		}
+		// Zoom out just undoes what the zoom in did
 		else {
 			xDifference = -allXDifference[count];
 		}
@@ -416,14 +573,6 @@ int drawTitle(int state) {
 
 		screenWrap += xDifference;
 		count++;
-		/*count++;*/
-		// We are where we want to be
-		/*if (count == frames) {
-			logoRect.x = movePOS[0];
-			logoRect.y = movePOS[1];
-		}	*/
-
-
 	}
 	else {
 		/*xDifference = 0;
@@ -433,7 +582,6 @@ int drawTitle(int state) {
 			if (!isDiff) state = titleDiff;
 			else state = title;
 
-			printf("%f\n", logoRect.projectedRect.x - logoRect.realRect.x);
 			isDiff = !isDiff;
 		}
 		count = 0;
@@ -455,23 +603,48 @@ int drawTitle(int state) {
 
 	w = handleXPos(xPos[0], xPos[1], screenWrap, w, &h, rectW);
 
+	int haltCond;
+	// If transition, difficulty assets are also affected, if not only videos matter
+	if (state == titleAni) {
+		haltCond = max(VIDEO_COUNT, selectScreenRects);
+	}
+	else {
+		haltCond = VIDEO_COUNT;
+	}
+
 	// This is gonna scale the videos/pfps based on the logo's movement
-	for (int a = 0; a < VIDEO_COUNT; a++) {
+	for (int a = 0; a < haltCond; a++) {
 		float realXShift = xPos[0][a] - rectArray[a].realRect.x;
 
 		// xPos changes are real, not projected changes
 		rectArray[a].realRect.x = xPos[0][a];
 		pfpRects[a].realRect.x += realXShift;
 
+		// Need to calculate the new y, w, and h based on the logo's movement
 		if (state == titleAni) {
-			rectArray[a] = projectRect(rectArray[a], xDifference, yDifference);
-			pfpRects[a] = projectRect(pfpRects[a], xDifference, yDifference);
+			if (a < VIDEO_COUNT) {
+				rectArray[a] = projectRect(rectArray[a], xDifference, yDifference);
+				pfpRects[a] = projectRect(pfpRects[a], xDifference, yDifference);
+			}
+			
+			if (a < DIFFICULTY_COUNT) {
+				for (int b = 0; b < explanationTxt[a].lineCount; b++) {
+					if (!isDiff) {
+						explanationTxt[a].lineRects[b].realRect.y -= expOffset / frames / 2;
+					}
+					else {
+						explanationTxt[a].lineRects[b].realRect.y += expOffset / frames / 2;
+					}
+
+					explanationTxt[a].lineRects[b] = projectRect(explanationTxt[a].lineRects[b], xDifference, yDifference);
+					
+				}	
+			}
 
 			if (a < selectScreenRects) {
 				difficultyRects[a] = projectRect(difficultyRects[a], xDifference, yDifference);
 				buttonDifficulty[a] = projectRect(buttonDifficulty[a], xDifference, yDifference);
 			}
-
 		}
 
 
@@ -537,6 +710,11 @@ int drawTitle(int state) {
 
 	displayTextAsSurface(startLogo, startTxt);
 	displayTextAsSurface(quitLogo, quitTxt);
+	if (gameAttr->difficulty != -1 && inBounds(explanationRect.projectedRect)) {
+		for (int a = 0; a < explanationTxt[gameAttr->difficulty].lineCount; a++) {
+			displayTextAsSurface(explanationTxt[gameAttr->difficulty].lineRects[a], explanationTxt[gameAttr->difficulty].lines[a]);
+		}
+	}
 	
 	// Can only start once difficulty selected
 	if (difficulty != -1)  {

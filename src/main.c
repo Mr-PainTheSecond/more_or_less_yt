@@ -204,6 +204,8 @@ GameAttributes* initializeAttr(void) {
 	// This should be title on non-debug versions
 	newAttr->state = DEFAULT_GAME_STATE;
 
+	newAttr->difficulty = -1;
+
 	newAttr->frameByFrame = false;
 	// Signals it is not relevent rn
 	newAttr->timer = STARTING_TIME;
@@ -303,6 +305,7 @@ void handleMouseClick(SDL_MouseButtonEvent button, bool* aboutToQuit, int* timeC
 		if (isPressed(event.button, backRect)) {
 			gameAttr->state = titleAni;
 			difficulty = -1;
+			gameAttr->difficulty = -1;
 			printf("It is pressed\n");
 			// Can technically be pressed when invisible, so ignore it if it is
 		} else if (isPressed(event.button, playRect) && difficulty != -1) {
@@ -316,6 +319,7 @@ void handleMouseClick(SDL_MouseButtonEvent button, bool* aboutToQuit, int* timeC
 				if (isPressed(event.button, diffRects[a].projectedRect)) {
 					printf("Hola\n");
 					difficulty = a;
+					gameAttr->difficulty = a;
 					break;
 				}
 			}
@@ -372,7 +376,7 @@ int main() {
 	}
 
 	
-	offlineVideos = readAndSplit("..\\assets\\data\\offline_storage.txt", '\n', &offlineVideoCount);
+	/*offlineVideos = readAndSplit("..\\assets\\data\\offline_storage.txt", '\n', &offlineVideoCount);*/
 
 	clock_t timeClocked = clock();
 	clock_t cooldown = clock();

@@ -108,6 +108,90 @@ void createFontArray() {
 	fontArray->fontSize = 8;
 }
 
+/*Given a TTF_Text, return an array which has wrapping which can
+fit within the width of containerW*/
+TTF_Text** wrapText(TTF_Text* msg, float containerW, int* count) {
+
+	if (count == NULL) return NULL;
+	*count = 0;
+
+	TTF_Font* font = TTF_GetTextFont(msg);
+
+	// Our basis for the wrap
+	TTF_Text* refTxt = TTF_CreateText(textEngine, font, "a", strlen("a"));
+	int letterSize = 0;
+	TTF_GetTextSize(refTxt, &letterSize, NULL);
+
+
+	TTF_DestroyText(refTxt);
+
+	char* strMsg = msg->text;
+
+	int splitCount = 0;
+	// We shouldn't start a new line halfway through an old one
+	char** splitMsg = split(strMsg, ' ', &splitCount);
+
+	TTF_Text** textLines = malloc(sizeof(TTF_Text*) * splitCount);
+
+	if (textLines == NULL) {
+		errorExit("Memory alloc for the text lines failed");
+	}
+
+	float currentSize = 0.0f;
+	int lastIndex = 0;
+
+	for (int a = 0; a < splitCount; a++) {
+		// If there is nothing, we will unconditionally add the line
+		if (currentSize == 0.0f) {
+			currentSize = strlen(splitMsg[a]) * letterSize;
+		// Does the new word fit?
+		}
+		else if (currentSize + ((strlen(splitMsg[a]) * letterSize)) < containerW) {
+			currentSize += strlen(splitMsg[a]) * letterSize;
+		}
+		else {
+			int newLen = 0;
+			char* msgPart = join(splitMsg, lastIndex, a - 1, " ", &newLen);
+			
+			textLines[(*count)] = TTF_CreateText(textEngine, font, msgPart, strlen(msgPart));
+			(*count)++;
+			
+			
+			free(msgPart);
+			lastIndex = a;
+
+			currentSize = 0.0f;
+
+		}
+	}
+
+	// Adds in the last part, if it exists
+	if (currentSize != 0.0f) {
+		int newLen = 0;
+		char* msgPart = join(splitMsg, lastIndex, splitCount - 1, " ", &newLen);
+		
+		textLines[(*count)] = TTF_CreateText(textEngine, font, msgPart, strlen(msgPart));
+		(*count)++;
+		
+		free(msgPart);
+	}
+	
+	TTF_Text** tempTxt = realloc(textLines, sizeof(TTF_Text*) * (*count));
+	if (tempTxt == NULL) {
+		errorExit("Memory realloc for the text lines failed");
+	}
+
+	textLines = tempTxt;
+
+	// Free the split message
+	for (int a = 0; a < splitCount; a++) {
+		free(splitMsg[a]);
+	}
+
+	free(splitMsg);
+	return textLines;
+}
+
 void freeFontArray() {
 	for (int a = 0; a < fontArray->fontIndex; a++) {
 		free(fontArray->fonts[a]);

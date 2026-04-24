@@ -95,8 +95,6 @@ SDL_FRect zoom(float oldX, float oldY, float newX, float newY, float w, float h)
 	float newW = w * scale;
 	float newH = h * scale;
 
-
-	printf("%f %f\n", newW, newH);
 	SDL_FRect object = createRect(newX, oldY * scale, newW, newH, false);
 
 	return object;
