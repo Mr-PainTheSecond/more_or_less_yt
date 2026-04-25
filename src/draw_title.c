@@ -89,7 +89,11 @@ void createExplanationTxt(MultiLineText* explanationTxt, TTF_Font* font, char***
 
 	int textWidth = 0;
 	int textHeight = 0;
-	TTF_Text* refTxt = TTF_CreateText(textEngine, font, "a", strlen("a"));
+	TTF_Font* newFont = TTF_CopyFont(font);
+
+	TTF_SetFontSize(newFont, TTF_GetFontSize(font) * 0.5f);
+
+	TTF_Text* refTxt = TTF_CreateText(textEngine, newFont, "a", strlen("a"));
 	TTF_GetTextSize(refTxt, &textWidth, &textHeight);
 	TTF_DestroyText(refTxt);
 
@@ -102,7 +106,6 @@ void createExplanationTxt(MultiLineText* explanationTxt, TTF_Font* font, char***
 
 		// New lines added by wrapping are non major
 		int majorLineCount = explanationTxt[a].lineCount;
-		printf("%d\n", explanationTxt[a].lineCount);
 
 		explanationTxt[a].lines = malloc(sizeof(TTF_Text*) * explanationTxt[a].lineCount);
 		explanationTxt[a].lineRects = malloc(sizeof(ProjectedObject) * explanationTxt[a].lineCount);
@@ -118,7 +121,7 @@ void createExplanationTxt(MultiLineText* explanationTxt, TTF_Font* font, char***
 			int jsonIndex = 3 + b;
 
 			char* newLine = jsonData[a][jsonIndex];
-			TTF_Text* noWrapTxt = TTF_CreateText(textEngine, font, newLine, strlen(newLine));
+			TTF_Text* noWrapTxt = TTF_CreateText(textEngine, newFont, newLine, strlen(newLine));
 
 			int divisions = 0;		
 			TTF_Text** newLines = wrapText(noWrapTxt, wrapPoint, &divisions);
@@ -160,7 +163,7 @@ void createExplanationTxt(MultiLineText* explanationTxt, TTF_Font* font, char***
 
 			char condMsg[] = "All previous conditions apply";
 
-			explanationTxt[a].lines[lineIndex] = TTF_CreateText(textEngine, font, condMsg, strlen(condMsg));
+			explanationTxt[a].lines[lineIndex] = TTF_CreateText(textEngine, newFont, condMsg, strlen(condMsg));
 			explanationTxt[a].lineRects[lineIndex] = createProjectedObject(ref.x, coolerY, ref.w, ref.h / majorLineCount, false);
 		}
 	}
@@ -339,13 +342,11 @@ int drawTitle(int state) {
 		// All the difficulty imgs follow same format
 		formatAsFileLocation("..\\assets\\images\\perm\\other\\difficulty_", ".PNG", diffLocations, DIFFICULTY_COUNT);
 
-		printf("%s\n", diffLocations[0]);
 
 		for (int a = 0; a < DIFFICULTY_COUNT; a++) {
 			SDL_Surface* diffSurf = IMG_Load(diffLocations[a]);
 			
 			difficultyImgs[a] = SDL_CreateTextureFromSurface(renderer, diffSurf);
-
 
 
 			SDL_DestroySurface(diffSurf);
@@ -434,19 +435,9 @@ int drawTitle(int state) {
 
 		char*** jsonData = readJSONArray("..\\assets\\data\\description.json", "descriptions", &objs, &items);
 
-		for (int a = 0; a < objs; a++) {
-			printf("%d difficulty's data: ", a);
-			printf("%d\n", items[a]);
-
-			for (int b = 0; b < items[a]; b++) {
-				printf("%s, ", jsonData[a][b]);
-			}
-
-			printf("\n");
-		}
-
-
 		createExplanationTxt(explanationTxt, firstStopFont, jsonData, objs, explanationRect.realRect);
+
+		freeJSONArray(jsonData, objs, items);
 	}
 
 	// Turns the projected rects back to their real size
@@ -476,11 +467,15 @@ int drawTitle(int state) {
 
 		for (int a = 0; a < DIFFICULTY_COUNT; a++) {
 			for (int b = 0; b < explanationTxt[a].lineCount; b++) {
-				unprojectObject(explanationTxt[a].lineRects[b]);
+				// Similar to explanationRect
+				explanationTxt[a].lineRects[b].realRect.y += expOffset / 2;
+				explanationTxt[a].lineRects[b] = unprojectObject(explanationTxt[a].lineRects[b]);
 			}
 		}
 
 		isDiff = false;
+		screenWrap = firstStopDistanceX;
+
 		gameAttr->state = normal;
 		return normal;
 	}

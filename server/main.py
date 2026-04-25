@@ -26,7 +26,7 @@ except ImportError:
     sys.exit(0)
 
 class YouTubeData():
-    def __init__(self, firstIndex = 0, path = "..\\assets\\images\\temp\\", storage = "storage.txt"):
+    def __init__(self, firstIndex = 0, path = "..\\assets\\images\\temp\\", storage = "storage.json"):
         self.threads: list[threading.Thread] = list()
         self.urls = []
         self.lock = threading.Lock()

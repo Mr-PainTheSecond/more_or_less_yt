@@ -160,7 +160,8 @@ TTF_Text** wrapText(TTF_Text* msg, float containerW, int* count) {
 			free(msgPart);
 			lastIndex = a;
 
-			currentSize = 0.0f;
+			// New line will start with our current word
+			currentSize = strlen(splitMsg[a]) * letterSize;
 
 		}
 	}

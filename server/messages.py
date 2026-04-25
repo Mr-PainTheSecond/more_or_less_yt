@@ -65,17 +65,20 @@ class Messages:
                 return
         print("[green]Established a connection")
         with lock:
-            batch = utilities.getStorageData("storage.txt", illegalIndex)
+            batch = utilities.getStorageData("storage.json", illegalIndex)
             self.sendYTData(batch["views"], batch["file"], batch["subs"])
         
         return True
     
     def sendYTData(self, views, fileNames, subCount):
         for view, file, subs in zip(views, fileNames, subCount, strict=True):
+            print("views " + view)
             self.socket.send_string(view)
             self.socket.recv()
+            print("file " + file)
             self.socket.send_string(file)
             self.socket.recv()
+            print("subs " + subs)
             self.socket.send_string(subs)
             self.socket.recv()
         

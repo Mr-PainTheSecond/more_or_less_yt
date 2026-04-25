@@ -1,0 +1,62 @@
+{
+ "descriptions": [
+    {
+        "id": "0",
+        "title": "Washed Up YouTuber",
+        "line_count": "7",
+        "line_1": "Take Two Videos left and right",
+        "line_2": "Left Videos has views shown, Right is hidden",
+        "line_3": "Guess whether Right has More Or Less views",
+        "line_4": "If right, +1 points. If wrong, -1 Mr. Beasst",
+        "line_5": "Starts with 3 Mr. Beasts",
+        "line_6": "Earn 20 points to win",
+        "line_7": "If you run out of Mr Beasts, you lose.",
+        "first": "1"
+    },
+    {
+        "id": "1",
+        "title": "YouTube Kids",
+        "line_count": "1",
+        "line_1": "Subscriber Count is now hidden",
+        "first": "0"
+    },
+    {
+        "id": "2",
+        "title": "Raid Shadow Legends", 
+        "line_count": "3",
+        "line_1": "Start with a 45 second timer",
+        "line_2": "Correct guesses add 2 seconds to timer",
+        "line_3": "If the timer reaches 0, you lose",
+        "first": "0"
+    },
+    {
+        "id": "3",
+        "title": "Unskipable Ads",
+        "line_count": "1",
+        "line_1": "-2 points for wrongs answers",
+        "first": "0"
+    },
+    {
+        "id": "4",
+        "title": "Demonitazation",
+        "line_count": "1",
+        "line_1": "Start with 2 Mr. Beasts",
+        "first": "0"
+    },
+    {
+        "id": "5",
+        "title": "Mr. Beast",
+        "line_count": "1",
+        "line_1": "Videos can no longer have >1M views",
+        "first": "0"
+    },
+    {
+        "id": "6",
+        "title": "The OG GOATS",
+        "line_count": "2",
+        "line_1": "Timer now starts at 35 seconds (-10 seconds)",
+        "line_2": "Correct guesses now add 1 second (-1 second)",
+        "first": "0"
+    }
+]   
+}

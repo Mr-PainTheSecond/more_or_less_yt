@@ -39,6 +39,7 @@ char*** readJSONArray(const char* fileName, const char* array, int* objCount, in
 
 __declspec(noreturn) void errorExit(const char* msg);
 
+void freeJSONArray(char*** data, int objCount, int* entries);
 
 void quit(Queue* queue);
 

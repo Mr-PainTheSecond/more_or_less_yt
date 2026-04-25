@@ -258,6 +258,19 @@ char*** readJSONArray(const char* fileName, const char* array, int* objCount, in
 	return data;
 }
 
+/*Frees an Array read from I/O after it has been used up*/
+void freeJSONArray(char*** data, int objCount, int* entries) {
+	for (int a = 0; a < objCount; a++) {
+		for (int b = 0; b < entries[a]; b++) {
+			free(data[a][b]);
+		}
+		free(data[a]);
+	}
+
+	free(data);
+	free(entries);
+}
+
 /*Takes a double char pointer, and concanates with fileOne and fileTwo to become a valid file
 location. fileOne is everything before each file and fileTwo is everything afterwards
 fileOne and fileTwo can be NULL, but both being NULL would do nothing*/
