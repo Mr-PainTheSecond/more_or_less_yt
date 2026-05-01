@@ -187,6 +187,8 @@ void drawSmoothRectagle(SDL_FRect rect, int r, int g, int b, int a, float radius
 	if (!inBounds(rect)) return;
 	int segments = 24;
 	int vertexes = (segments * 4 + 1) * 2;
+	// Makes sure the edges don't go overboard
+	radius = min(radius, min(rect.w, rect.h) / 2);
 
 	SDL_FPoint* vertices = malloc(sizeof(SDL_Point) * vertexes);
 
@@ -212,7 +214,7 @@ void drawSmoothRectagle(SDL_FRect rect, int r, int g, int b, int a, float radius
 		float angles = M_PI + a * angleStep;
 		vertices[index].x = left + cosf(angles) * radius;
 		vertices[index].y = top + sinf(angles) * radius;
-		//printf("%f, %f\n", vertices[index].x, vertices[index].y);
+		printf("Top Left: %f, %f\n", vertices[index].x, vertices[index].y);
 		index++;
 	}
 
@@ -221,7 +223,7 @@ void drawSmoothRectagle(SDL_FRect rect, int r, int g, int b, int a, float radius
 		float angles = -M_PI / 2 + a * angleStep;
 		vertices[index].x = right + cosf(angles) * radius;
 		vertices[index].y = top + sinf(angles) * radius;
-		//printf("%f, %f\n", vertices[index].x, vertices[index].y);
+		printf("Top Right: %f, %f\n", vertices[index].x, vertices[index].y);
 		index++;
 	}
 
@@ -243,6 +245,8 @@ void drawSmoothRectagle(SDL_FRect rect, int r, int g, int b, int a, float radius
 		index++;
 	}
 
+	vertices[index].x = left + cosf(M_PI) * radius;
+	vertices[index].y = top + sinf(M_PI) * radius;
 
 	// We used the diameter a lot
 	float diameter = radius * 2;
@@ -253,35 +257,35 @@ void drawSmoothRectagle(SDL_FRect rect, int r, int g, int b, int a, float radius
 	rect.x += diameter;
 	rect.y += diameter;
 	// Draws the center Rectangles
-	drawRectangle(&rect, r, g, b, a, false);
+	//drawRectangle(&rect, r, g, b, a, false);
 
-	// Draws four rectangles on the side
-	SDL_FRect topRect = createRect(vertices[segments].x + radius, vertices[1].y + radius,
-		rect.w, vertices[segments].y - rect.y, false);
+	//// Draws four rectangles on the side
+	//SDL_FRect topRect = createRect(vertices[segments].x + radius, vertices[1].y + radius,
+	//	rect.w, vertices[segments].y - rect.y, false);
 
-	drawRectangle(&topRect, r, g, b, a, false);
+	//drawRectangle(&topRect, r, g, b, a, false);
 
-	SDL_FRect bottomRect = createRect(vertices[segments].x + radius, vertices[segments * 3].y,
-		rect.w, vertices[segments].y - rect.y, false);
+	//SDL_FRect bottomRect = createRect(vertices[segments].x + radius, vertices[segments * 3].y,
+	//	rect.w, vertices[segments].y - rect.y, false);
 
-	drawRectangle(&bottomRect, r, g, b, a, false);
+	//drawRectangle(&bottomRect, r, g, b, a, false);
 
-	SDL_FRect leftRect = createRect(vertices[1].x + diameter, vertices[1].y,
-		vertices[1].x - rect.x, rect.h + diameter, false);
+	//SDL_FRect leftRect = createRect(vertices[1].x + diameter, vertices[1].y,
+	//	vertices[1].x - rect.x, rect.h + diameter, false);
 
-	drawRectangle(&leftRect, r, g, b, a, false);
+	//drawRectangle(&leftRect, r, g, b, a, false);
 
-	SDL_FRect rightRect = createRect(vertices[segments * 2].x, vertices[1].y,
-		vertices[1].x - rect.x, rect.h + diameter, false);
+	//SDL_FRect rightRect = createRect(vertices[segments * 2].x, vertices[1].y,
+	//	vertices[1].x - rect.x, rect.h + diameter, false);
 
-	drawRectangle(&rightRect, r, g, b, a, false);
+	//drawRectangle(&rightRect, r, g, b, a, false);
 
-	// Draw messes up the renderer color
-	SDL_SetRenderDrawColor(renderer, r, g, b, a);
-	index = 1;
+	//// Draw messes up the renderer color
+	//SDL_SetRenderDrawColor(renderer, r, g, b, a);
+	//index = 1;
 
 	SDL_FColor color = (SDL_FColor){ r / 255.f, g / 255.f, b / 255.f, a / 255.f };
-	drawSmoothEdges(vertices, 0, (vertexes / 2) + 2, color);
+	drawSmoothEdges(vertices, 0, (vertexes / 2) + 3, color);
 	free(vertices);
 	
 }

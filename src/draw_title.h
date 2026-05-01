@@ -6,5 +6,6 @@
 #include "config.h"
 #include "draw_shape.h"
 #include "utilities.h"
+#include "title_helper.h"
 
 #endif // !DRAW_TITLE_H_

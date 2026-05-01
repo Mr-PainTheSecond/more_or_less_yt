@@ -1,173 +1,7 @@
 #include "draw_title.h"
 
-/*Handles everything for the xPos array, which keeps track of the positions
-of the thumbnails which are all offset every frame. Will also change the width and
-height if the screen size ever changes.*/
-float handleXPos(float* realPOS, float* projectedPOS, float wrapPoint, float w, float* h, float rectW) {
 
-	// The screen has changed, we need to fix the positions
-	if (w != screen->w) {
-		// First, we removed the effect the screen width has on the positons
-		for (int a = 0; a < VIDEO_COUNT; a++) {
-			realPOS[a] -= rectW;
-		}
-
-		for (int a = 0; a < VIDEO_COUNT; a++) {
-			realPOS[a] /= (w / 2);
-		}
-
-		// Correct the w/h variables
-		w = (float)screen->w;
-		*h = (float)screen->h;
-
-		// We add back the effect
-		for (int a = 0; a < VIDEO_COUNT; a++) {
-			realPOS[a] *= (w / 2);
-		}
-
-		for (int a = 0; a < VIDEO_COUNT; a++) {
-			realPOS[a] += rectW;
-		}
-	}
-
-	// This signals that this is the first iteration, and we need to populate the value
-	if (realPOS[0] == INT_MAX) {
-		for (int a = 0; a < VIDEO_COUNT; a++) {
-			realPOS[a] = -(rectW * 2) + (w / 2 * (a % (VIDEO_COUNT / LEVEL_COUNT)));
-			projectedPOS[a] = realPOS[a];
-		}
-	}
-
-	// If not, we offset.
-	else {
-		for (int a = 0; a < VIDEO_COUNT; a++) {
-			realPOS[a] -= 4;
-			if (projectedPOS[a] + rectW < -wrapPoint) {
-				// This is the right most position the rect can be
-				realPOS[a] = -(rectW * 2) + (rectW * 2 * (VIDEO_COUNT / LEVEL_COUNT - 1));
-			}
-		}
-	}
-
-	return w;
-}
-
-ProjectedObject projectRect(ProjectedObject obj, float xDifference, float yDifference) {
-	float newX = obj.projectedRect.x + xDifference;
-	float newY = obj.projectedRect.y + yDifference;
-	obj.projectedRect = zoom(obj.realRect.x, obj.realRect.y, newX, newY, obj.realRect.w, obj.realRect.h);
-	return obj;
-}
-
-/*Given the x, y, w, and h, returns a projectedObject which has both the realRect and the projectedRect
-Start out the same, but in zooms projected changes while real stays the same*/
-ProjectedObject createProjectedObject(float x, float y, float w, float h, bool centered) {
-	ProjectedObject newObj;
-	
-	newObj.realRect = createRect(x, y, w, h, centered);
-	newObj.projectedRect = createRect(x, y, w, h, centered);
-
-	return newObj;
-}
-
-/*Given a project objects, set the projection equal
-to the real attributes, undoing projection*/
-ProjectedObject unprojectObject(ProjectedObject obj) {
-	obj.projectedRect.x = obj.realRect.x;
-	obj.projectedRect.y = obj.realRect.y;
-	obj.projectedRect.w = obj.realRect.w;
-	obj.projectedRect.h = obj.realRect.h;
-
-	return obj;
-}
-
-void createExplanationTxt(MultiLineText* explanationTxt, TTF_Font* font, char*** jsonData, int entries, SDL_FRect ref) {
-	
-	// Where the line count is placed in the JSON file
-	const int lineCountIndex = 2;
-	float wrapPoint = ref.w * 0.9f;
-
-	int textWidth = 0;
-	int textHeight = 0;
-	TTF_Font* newFont = TTF_CopyFont(font);
-
-	TTF_SetFontSize(newFont, TTF_GetFontSize(font) * 0.5f);
-
-	TTF_Text* refTxt = TTF_CreateText(textEngine, newFont, "a", strlen("a"));
-	TTF_GetTextSize(refTxt, &textWidth, &textHeight);
-	TTF_DestroyText(refTxt);
-
-	for (int a = 0; a < entries; a++) {
-		explanationTxt[a].lineCount = convertToInt(jsonData[a][lineCountIndex]);
-
-		int jsonLines = explanationTxt[a].lineCount;
-		// Every difficulty past one will say "All previous conditions apply"
-		if (a != 0) explanationTxt[a].lineCount++;
-
-		// New lines added by wrapping are non major
-		int majorLineCount = explanationTxt[a].lineCount;
-
-		explanationTxt[a].lines = malloc(sizeof(TTF_Text*) * explanationTxt[a].lineCount);
-		explanationTxt[a].lineRects = malloc(sizeof(ProjectedObject) * explanationTxt[a].lineCount);
-
-		if (explanationTxt[a].lines == NULL || explanationTxt[a].lineRects == NULL) {
-			fprintf(stderr, "%s\n", "Allocation for explanation text/pos failed");
-			quit(ytQueue);
-			exit(1);
-		}
-
-		int lineIndex = 0;
-		for (int b = 0; b < jsonLines; b++) {
-			int jsonIndex = 3 + b;
-
-			char* newLine = jsonData[a][jsonIndex];
-			TTF_Text* noWrapTxt = TTF_CreateText(textEngine, newFont, newLine, strlen(newLine));
-
-			int divisions = 0;		
-			TTF_Text** newLines = wrapText(noWrapTxt, wrapPoint, &divisions);
-			if (divisions > 1) {
-				explanationTxt[a].lineCount += (divisions - 1);
-				TTF_Text** tempTxt = realloc(explanationTxt[a].lines, sizeof(TTF_Text*) * explanationTxt[a].lineCount);
-				ProjectedObject* tempObj = realloc(explanationTxt[a].lineRects, sizeof(ProjectedObject) * explanationTxt[a].lineCount);
-
-				if (tempTxt == NULL || tempObj == NULL) {
-					fprintf(stderr, "%s\n", "Allocation for explanation text/pos failed");
-					quit(ytQueue);
-					exit(1);
-				}
-
-				explanationTxt[a].lines = tempTxt;
-				explanationTxt[a].lineRects = tempObj;
-
-				for (int c = lineIndex; c < lineIndex + divisions; c++) {
-					explanationTxt[a].lines[c] = newLines[c - lineIndex];
-					float coolY = (ref.y + (ref.h / majorLineCount) * b) + (textHeight * (5.0f / 4.0f) * (c - lineIndex));
-					explanationTxt[a].lineRects[c] = createProjectedObject(ref.x, coolY, ref.w, ref.h / majorLineCount, false);
-				}
-
-
-				lineIndex += (divisions - 1);
-			}
-			else {
-				explanationTxt[a].lines[lineIndex] = noWrapTxt;
-				float coolY = ref.y + (ref.h / majorLineCount) * b;
-				explanationTxt[a].lineRects[lineIndex] = createProjectedObject(ref.x, coolY, ref.w, ref.h / majorLineCount, false);
-			}
-			
-
-			lineIndex++;
-		}
-
-		if (a != 0) {
-			float coolerY = ref.y + (ref.h / majorLineCount) * jsonLines;
-
-			char condMsg[] = "All previous conditions apply";
-
-			explanationTxt[a].lines[lineIndex] = TTF_CreateText(textEngine, newFont, condMsg, strlen(condMsg));
-			explanationTxt[a].lineRects[lineIndex] = createProjectedObject(ref.x, coolerY, ref.w, ref.h / majorLineCount, false);
-		}
-	}
-}
+/*MAIN FUNCTION*/
 
 /*Responsible for drawing the entire title section of the
 game.*/
@@ -184,7 +18,7 @@ int drawTitle(int state) {
 	static TTF_Font* firstStopFont = NULL;
 
 	// Stores the explanation for each difficulty
-	static MultiLineText explanationTxt[DIFFICULTY_COUNT];
+	static MultiLineText explanationTxt[DIFFICULTY_COUNT + 1];
 
 	static float xPos[2][VIDEO_COUNT];
 	static Vector2D vectorFromLogo[VIDEO_COUNT * 2];
@@ -205,6 +39,7 @@ int drawTitle(int state) {
 	static ProjectedObject logoRect;
 	static ProjectedObject explanationRect;
 	static ProjectedObject beginGameLogo;
+	static ProjectedObject difficultyName;
 
 	static ProjectedObject* rectArray;
 	static ProjectedObject* pfpRects;
@@ -226,6 +61,8 @@ int drawTitle(int state) {
 	const int selectScreenRects = DIFFICULTY_COUNT + 1;
 
 	const int frames = FRAME_RATE * 3 / 2;
+
+	/*INITIALIZATION*/
 
 	if (pfpImgs == NULL) {
 		files = readAndSplit("..\\assets\\data\\pfp.txt", '\n', &filesNum);
@@ -259,7 +96,7 @@ int drawTitle(int state) {
 		}
 
 		firstStopRatio = logoRect.realRect.w / logoRect.projectedRect.w;
-		firstStopDistanceX = logoRect.projectedRect.x - logoRect.realRect.x;
+		firstStopDistanceX = logoRect.projectedRect.x - (logoRect.realRect.x);
 		firstStopDistanceY = screen->h * -yDisToH;
 
 		// The point where the thumbnails will wrap around
@@ -390,8 +227,8 @@ int drawTitle(int state) {
 		startLogo = createProjectedObject(w / 2 - (w / 8), h * 7 / 8, w / 6, h / 6, true);
 		quitLogo = createProjectedObject(w / 2 + (w / 8), h * 7 / 8, w / 6, h / 6, true);
 		backLogo = createProjectedObject(w / 2 - (w / 8) - firstStopDistanceX, h * 7 / 8 - firstStopDistanceY, w / 6 * firstStopRatio, h / 6 * firstStopRatio, true);
-		
-		
+
+				
 		float rectW = w / 4;
 		float rectH = rectW * 9 / 16;
 
@@ -422,6 +259,12 @@ int drawTitle(int state) {
 
 			buttonDifficulty[a] = createProjectedObject(buttonX, buttonY, width / 2, height / 2, false);
 		}
+
+		// Display name of selected difficulty
+		float diffNameX = difficultyRects[selectScreenRects - 1].realRect.x - (width * 2.0f / firstStopRatio / 2) - (width / 8);
+		float diffNameY = difficultyRects[selectScreenRects - 1].realRect.y - (h * 3 / 4.0f * firstStopRatio);
+
+		difficultyName = createProjectedObject(diffNameX, diffNameY, width * 2.0f, height * 3 / 4.0f, false);
 
 		// Explanation is formatted with the difficulties
 		float expX = (difficultyRects[1].realRect.x + (w * 17 / 8) / firstStopRatio);
@@ -465,7 +308,7 @@ int drawTitle(int state) {
 			buttonDifficulty[i] = unprojectObject(buttonDifficulty[i]);
 		}
 
-		for (int a = 0; a < DIFFICULTY_COUNT; a++) {
+		for (int a = 0; a < selectScreenRects; a++) {
 			for (int b = 0; b < explanationTxt[a].lineCount; b++) {
 				// Similar to explanationRect
 				explanationTxt[a].lineRects[b].realRect.y += expOffset / 2;
@@ -563,6 +406,7 @@ int drawTitle(int state) {
 		quitLogo = projectRect(quitLogo, xDifference, yDifference);
 		explanationRect = projectRect(explanationRect, xDifference, yDifference);
 		beginGameLogo = projectRect(beginGameLogo, xDifference, yDifference);
+		difficultyName = projectRect(difficultyName, xDifference, yDifference);
 		/*zoomOutTxt(changingSmallFont, logoRect.realRect.x, logoRect.projectedRect.x + xDifference);*/
 
 
@@ -607,6 +451,8 @@ int drawTitle(int state) {
 		haltCond = VIDEO_COUNT;
 	}
 
+
+	/*ARRAY PROJECTION*/
 	// This is gonna scale the videos/pfps based on the logo's movement
 	for (int a = 0; a < haltCond; a++) {
 		float realXShift = xPos[0][a] - rectArray[a].realRect.x;
@@ -622,7 +468,7 @@ int drawTitle(int state) {
 				pfpRects[a] = projectRect(pfpRects[a], xDifference, yDifference);
 			}
 			
-			if (a < DIFFICULTY_COUNT) {
+			if (a < selectScreenRects) {
 				for (int b = 0; b < explanationTxt[a].lineCount; b++) {
 					if (!isDiff) {
 						explanationTxt[a].lineRects[b].realRect.y -= expOffset / frames / 2;
@@ -651,6 +497,9 @@ int drawTitle(int state) {
 
 		xPos[1][a] = rectArray[a].projectedRect.x;
 	}
+
+
+	/*RENDERING*/
 
 	//xOffset++;
 	//yOffset++;
@@ -700,14 +549,22 @@ int drawTitle(int state) {
 	drawSmoothRectagle(startLogo.projectedRect, wineColor.r, wineColor.g, wineColor.b, wineColor.a, startLogo.projectedRect.w / 6);
 	drawSmoothRectagle(quitLogo.projectedRect, wineColor.r, wineColor.g, wineColor.b, wineColor.a, quitLogo.projectedRect.w / 6);
 	drawSmoothRectagle(explanationRect.projectedRect, wineColor.r, wineColor.g, wineColor.b, wineColor.a, explanationRect.projectedRect.w / 6);
+	drawSmoothRectagle(difficultyName.projectedRect, wineColor.r, wineColor.g, wineColor.b, wineColor.a, difficultyName.projectedRect.w / 6);
 	/*displayText(startLogo.projectedRect, startTxt, &x, &y);
 	displayText(quitLogo.projectedRect, quitTxt, &x, &y);*/
 
 	displayTextAsSurface(startLogo, startTxt);
 	displayTextAsSurface(quitLogo, quitTxt);
+	// Explanins how currently selected difficulty works
 	if (gameAttr->difficulty != -1 && inBounds(explanationRect.projectedRect)) {
 		for (int a = 0; a < explanationTxt[gameAttr->difficulty].lineCount; a++) {
 			displayTextAsSurface(explanationTxt[gameAttr->difficulty].lineRects[a], explanationTxt[gameAttr->difficulty].lines[a]);
+		}
+	}
+	// This prompts user to select a difficulty
+	else if (inBounds(explanationRect.projectedRect)) {
+		for (int a = 0; a < explanationTxt[selectScreenRects - 1].lineCount; a++) {
+			displayTextAsSurface(explanationTxt[selectScreenRects - 1].lineRects[a], explanationTxt[selectScreenRects - 1].lines[a]);
 		}
 	}
 	
