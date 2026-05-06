@@ -100,7 +100,7 @@ void createExplanationTxt(MultiLineText* explanationTxt, TTF_Font* font, char***
 		explanationTxt[a].lineCount = convertToInt(jsonData[a][lineCountIndex]);
 
 		// Need a unique font for each difficulty
-		newFonts[a] = TTF_CopyFont(font);
+		newFonts[a] = copyFont(font);
 		int jsonLines = explanationTxt[a].lineCount;
 		// Need for font size
 		char* allText = join(jsonData[a], 3, 3 + jsonLines - 1, " ", &textWidth);
@@ -117,10 +117,11 @@ void createExplanationTxt(MultiLineText* explanationTxt, TTF_Font* font, char***
 		int majorLineCount = explanationTxt[a].lineCount;
 		// The more lines, the smaller the text
 		float fontFactor;
+		float logBase = 2.15f;
 
 		// Would be 0 or negative otherwise
-		if (charCount > 300) fontFactor = 0.005f;
-		else fontFactor = 1.5f - (charCount * 0.005f);
+		if (charCount > 696) fontFactor = 0.005f;
+		else fontFactor = 1.5f - log(1 + charCount * 0.005f) / log(logBase);
 		printf("Font Factor: %f, New Font Size: %f\n", fontFactor, TTF_GetFontSize(font) * fontFactor);
 		TTF_SetFontSize(newFonts[a], TTF_GetFontSize(font) * fontFactor);
 

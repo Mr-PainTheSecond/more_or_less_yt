@@ -6,7 +6,6 @@ import utilities
 import threading
 from rich import print
 
-lock = threading.Lock()
 
 class Messages:
     def __init__(self):
@@ -17,7 +16,7 @@ class Messages:
         # Time out after 5 seconds
         self.socket.setsockopt(zmq.RCVTIMEO, 1000)
     
-    def findConnection(self, illegalIndex = [], backup = False):
+    def findConnection(self, lock: threading.Lock, illegalIndex = [], backup = False):
         # The download is complete when we got here
         with lock:
             if backup and globals.downloadComplete:

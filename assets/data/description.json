@@ -6,20 +6,30 @@
         "line_count": "6",
         "line_1": "Earn 20 points to win",
         "line_2": "Starts with 3 Mr. Beasts (Lives)",
-        "line_3": "Showcased two videos (left/right)",
+        "line_3": "Showcases two videos (left/right)",
         "line_4": "Views are shown on left video",
         "line_5": "Subscribers and thumbnails are shown on both",
         "line_6": "Determine if right video has More Or Less views to earn points",
         "first": "1", 
         "new_font": "1",
-        "font_location": "..\\assets\\font\\diff_1_font.TTF"
+        "font_location": "..\\assets\\font\\diff_1_font.TTF",
+        "red": "0",
+        "green": "102",
+        "blue": "27",
+        "scale": "1.25"
     },
     {
         "id": "1",
         "title": "YouTube Kids",
         "line_count": "1",
         "line_1": "Subscriber Count is now hidden",
-        "first": "0"
+        "first": "0",
+        "new_font": "1",
+        "font_location": "..\\assets\\font\\cocomelon.TTF",
+        "red": "127",
+        "green": "47",
+        "blue": "202",
+        "scale": "1.5"
     },
     {
         "id": "2",
@@ -28,28 +38,47 @@
         "line_1": "Start with a 45 second timer",
         "line_2": "Correct guesses add 2 seconds to timer",
         "line_3": "If the timer reaches 0, you lose",
-        "first": "0"
+        "first": "0",
+        "new_font": "1",
+        "font_location": "..\\assets\\font\\raid.TTF",
+        "red": "180",
+        "green": "179",
+        "blue": "178",
+        "scale": "0.6"
     },
     {
         "id": "3",
-        "title": "Unskipable Ads",
+        "title": "UNSKIPPABLE ADS",
         "line_count": "1",
         "line_1": "-2 points for wrongs answers",
-        "first": "0"
+        "first": "0",
+        "new_font": "1",
+        "font_location": "..\\assets\\font\\ads.TTF",
+        "red": "249",
+        "green": "202",
+        "blue": "12",
+        "scale": "1"
     },
     {
         "id": "4",
-        "title": "Demonitazation",
+        "title": "Demonetization",
         "line_count": "1",
         "line_1": "Start with 2 Mr. Beasts",
-        "first": "0"
+        "first": "0",
+        "new_font": "0"
     },
     {
         "id": "5",
         "title": "Mr. Beast",
         "line_count": "1",
         "line_1": "Videos can no longer have >1M views",
-        "first": "0"
+        "first": "0",
+        "new_font": "1",
+        "font_location": "..\\assets\\font\\youtube.TTF",
+        "red": "255",
+        "green": "255",
+        "blue": "255",
+        "scale": "1"
     },
     {
         "id": "6",
@@ -57,7 +86,13 @@
         "line_count": "2",
         "line_1": "Timer now starts at 35 seconds (-10 seconds)",
         "line_2": "Correct guesses now add 1 second (-1 second)",
-        "first": "0"
+        "first": "0",
+        "new_font": "1",
+        "font_location": "..\\assets\\font\\goats.TTF",
+        "red": "255",
+        "green": "255",
+        "blue": "255",
+        "scale": "1.75"
     },
     {
         "id": "7",

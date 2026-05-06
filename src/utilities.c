@@ -15,6 +15,48 @@ int convertToInt(char* sInt) {
 	return finalInt;
 }
 
+/*Takes a string representation of a float,
+returns its float representation 
+NOTE: Can't handle the f (like 1.25f) format*/
+float convertToFloat(char* sFloat) {
+	int sFloatSize = strlen(sFloat);
+	float finalFloat = 0;
+	bool decimalPassed = false;
+	int decimalPlace = 1;
+	int decimalIndex = -1;
+	for (int a = 0; a < sFloatSize; a++) {
+		// First need to document where decimal is
+		if (sFloat[a] == '.') {
+			decimalIndex = a;
+			break;
+		}
+	}
+
+	// This isn't a decimal number
+	if (decimalIndex == -1) {
+		return (float)convertToInt(sFloat);
+	}
+
+	for (int a = 0; a < sFloatSize; a++) {
+		if (sFloat[a] == '.') {
+			decimalPassed = true;
+			continue;
+		}
+		int digit = (int)(sFloat[a]) - 48;
+		float addedDigit;
+		if (!decimalPassed) {
+			addedDigit = pow(10, decimalIndex - a - 1) * digit;
+		}
+		else {
+			addedDigit = pow(10, -decimalPlace) * digit;
+			decimalPlace++;
+		}
+		
+		finalFloat += addedDigit;
+	}
+	return finalFloat;
+}
+
 /*Given the frame rate, returns how
 many ms are in one frame*/
 time_t frameRateinMs(int frameRate) {
@@ -616,6 +658,7 @@ void quit(Queue* queue) {
 	SDL_DestroyWindow(window);
 	SDL_DestroyRenderer(renderer);
 	TTF_DestroyGPUTextEngine(textEngine);
+	TTF_Quit();
 	SDL_Quit();
 
 	for (int a = 0; a < offlineVideoCount; a++) {

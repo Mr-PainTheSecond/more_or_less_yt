@@ -318,8 +318,15 @@ void handleMouseClick(SDL_MouseButtonEvent button, bool* aboutToQuit, int* timeC
 				printf("%f\n", diffRects[a].projectedRect.x);
 				if (isPressed(event.button, diffRects[a].projectedRect)) {
 					printf("Hola\n");
-					difficulty = a;
-					gameAttr->difficulty = a;
+					if (gameAttr->difficulty != a) {
+						difficulty = a;
+						gameAttr->difficulty = a;
+					}
+					// If already selected, deselect it
+					else {
+						difficulty = -1;
+						gameAttr->difficulty = -1;
+					}
 					break;
 				}
 			}
@@ -375,7 +382,7 @@ int main() {
 		return -1;
 	}
 
-	
+
 	/*offlineVideos = readAndSplit("..\\assets\\data\\offline_storage.txt", '\n', &offlineVideoCount);*/
 
 	clock_t timeClocked = clock();

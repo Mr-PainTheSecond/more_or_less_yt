@@ -214,7 +214,7 @@ void drawSmoothRectagle(SDL_FRect rect, int r, int g, int b, int a, float radius
 		float angles = M_PI + a * angleStep;
 		vertices[index].x = left + cosf(angles) * radius;
 		vertices[index].y = top + sinf(angles) * radius;
-		printf("Top Left: %f, %f\n", vertices[index].x, vertices[index].y);
+	/*	printf("Top Left: %f, %f\n", vertices[index].x, vertices[index].y);*/
 		index++;
 	}
 
@@ -223,7 +223,7 @@ void drawSmoothRectagle(SDL_FRect rect, int r, int g, int b, int a, float radius
 		float angles = -M_PI / 2 + a * angleStep;
 		vertices[index].x = right + cosf(angles) * radius;
 		vertices[index].y = top + sinf(angles) * radius;
-		printf("Top Right: %f, %f\n", vertices[index].x, vertices[index].y);
+		/*printf("Top Right: %f, %f\n", vertices[index].x, vertices[index].y);*/
 		index++;
 	}
 

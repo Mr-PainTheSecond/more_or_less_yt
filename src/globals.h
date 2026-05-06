@@ -17,7 +17,7 @@ Screen* screen;
 typedef struct fonts {
 	TTF_Font** fonts;
 	int fontIndex;
-	float fontSize;
+	int fontSize;
 } Fonts;
 
 typedef struct ytNode {

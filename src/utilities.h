@@ -11,6 +11,13 @@ void deQueue(Queue* queue, YTNode* next);
 
 int convertToInt(char* sInt);
 
+
+/*Takes a string representation of a float,
+returns its float representation
+NOTE: Can't handle the f (like 12.25f) format,
+nor scientific notation (like 1.255e1) */
+float convertToFloat(char* sFloat);
+
 char* converToStr(int num);
 
 int expandQueue(zsock_t* requester, Queue* queue, int counter);

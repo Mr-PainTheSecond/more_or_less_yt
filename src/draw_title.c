@@ -19,6 +19,7 @@ int drawTitle(int state) {
 
 	// Stores the explanation for each difficulty
 	static MultiLineText explanationTxt[DIFFICULTY_COUNT + 1];
+	static TTF_Text* difficultyNameTxt[DIFFICULTY_COUNT + 1];
 
 	static float xPos[2][VIDEO_COUNT];
 	static Vector2D vectorFromLogo[VIDEO_COUNT * 2];
@@ -29,6 +30,8 @@ int drawTitle(int state) {
 	SDL_Color wineColor = { 100, 27, 0, SDL_ALPHA_OPAQUE };
 	SDL_Color greenColor = { 0, 102, 27, SDL_ALPHA_OPAQUE };
 	SDL_Color orangeColor = { 238, 63, 0, SDL_ALPHA_OPAQUE };
+	SDL_Color goldColor = { 255, 233, 0, SDL_ALPHA_OPAQUE };
+	SDL_Color whiteColor = { 255, 255, 255, SDL_ALPHA_OPAQUE };
 
 	int imgCount = 1;
 	int filesNum = 0;
@@ -262,7 +265,7 @@ int drawTitle(int state) {
 
 		// Display name of selected difficulty
 		float diffNameX = difficultyRects[selectScreenRects - 1].realRect.x - (width * 2.0f / firstStopRatio / 2) - (width / 8);
-		float diffNameY = difficultyRects[selectScreenRects - 1].realRect.y - (h * 3 / 4.0f * firstStopRatio);
+		float diffNameY = difficultyRects[selectScreenRects - 1].realRect.y - (h * 3 / 4.0f * firstStopRatio) - expOffset;
 
 		difficultyName = createProjectedObject(diffNameX, diffNameY, width * 2.0f, height * 3 / 4.0f, false);
 
@@ -280,8 +283,46 @@ int drawTitle(int state) {
 
 		createExplanationTxt(explanationTxt, firstStopFont, jsonData, objs, explanationRect.realRect);
 
+		int titleLocation = 1;
+		int lineCountLocation = 2;
+
+		TTF_Font** newFonts = malloc(sizeof(TTF_Font*) * (DIFFICULTY_COUNT + 1));
+		if (newFonts == NULL) {
+			errorExit("Allocation for the new fonts failed");
+		}
+
+		for (int a = 0; a <= DIFFICULTY_COUNT; a++) {
+			char* diffName = jsonData[a][titleLocation];
+			int lineCount = convertToInt(jsonData[a][lineCountLocation]);
+			// JSON is formatted as lines -> first -> hasFont
+			int hasNewFont = convertToInt(jsonData[a][lineCountLocation + 2 + lineCount]);
+			if (hasNewFont) {
+				// Font location is after font count
+				char* fontLocation = jsonData[a][lineCountLocation + 3 + lineCount];
+				// Some fonts need to be made bigger, while others smaller
+				float scaleFactor = convertToFloat(jsonData[a][lineCountLocation + 7 + lineCount]);
+				printf("Index %d Font location %s\n", a, fontLocation);
+				newFonts[a] = createFont(fontLocation, TTF_GetFontSize(firstStopFont) * scaleFactor);
+			}
+			else {
+				newFonts[a] = copyFont(firstStopFont);
+			}
+			difficultyNameTxt[a] = TTF_CreateText(textEngine, newFonts[a], diffName, strlen(diffName));
+			if (hasNewFont) {
+				// After font location, it has the following value of the font color
+				int red = convertToInt(jsonData[a][lineCountLocation + 4 + lineCount]);
+				int green = convertToInt(jsonData[a][lineCountLocation + 5 + lineCount]);
+				int blue = convertToInt(jsonData[a][lineCountLocation + 6 + lineCount]);
+
+				TTF_SetTextColor(difficultyNameTxt[a], red, green, blue, SDL_ALPHA_OPAQUE);
+			}
+		}
+		
+		free(newFonts);
 		freeJSONArray(jsonData, objs, items);
 	}
+
+	/*RESET STATE*/
 
 	// Turns the projected rects back to their real size
 	if (state == titleToNormal) {
@@ -293,9 +334,12 @@ int drawTitle(int state) {
 		// Also gotta undo real movements for these ones
 		explanationRect.realRect.y += expOffset / 2;
 		beginGameLogo.realRect.y += expOffset / 2;
+		difficultyName.realRect.y -= expOffset;
 
+		// Important: Undo real movement first then unproject (can't do other way around)
 		explanationRect = unprojectObject(explanationRect);
 		beginGameLogo = unprojectObject(beginGameLogo);
+		difficultyName = unprojectObject(difficultyName);
 
 		// The rare i lol
 		for (int i = 0; i < VIDEO_COUNT; i++) {
@@ -323,6 +367,8 @@ int drawTitle(int state) {
 		return normal;
 	}
 
+	/*SHUTDOWN*/
+	
 	// The transition from title to main game.
 	// Destroys all the assets in the meanwhile
 	if (state == shutDown) {
@@ -338,14 +384,19 @@ int drawTitle(int state) {
 				TTF_DestroyText(explanationTxt[a].lines[b]);
 			}
 
+			TTF_DestroyText(difficultyNameTxt[a]);		
 			free(explanationTxt[a].lineRects);
 			free(explanationTxt[a].lines);
 		}
 
+		// Get the last since loop doesn't cover it
+		TTF_DestroyText(difficultyNameTxt[DIFFICULTY_COUNT]);
 		TTF_DestroyText(startTxt);
 		TTF_DestroyText(quitTxt);
 		TTF_DestroyText(selectTxt);
 		TTF_DestroyText(backTxt);	
+
+		TTF_CloseFont(firstStopFont);
 		
 		free(pfpImgs);
 		free(thumbnailImgs);
@@ -396,10 +447,12 @@ int drawTitle(int state) {
 		if (!isDiff) {
 			explanationRect.realRect.y -= expOffset / frames / 2;
 			beginGameLogo.realRect.y -= expOffset / frames / 2;
+			difficultyName.realRect.y += expOffset / frames;
 		}
 		else {
 			explanationRect.realRect.y += expOffset / frames / 2;
 			beginGameLogo.realRect.y += expOffset / frames / 2;
+			difficultyName.realRect.y -= expOffset / frames;
 		}
 
 		startLogo = projectRect(startLogo, xDifference, yDifference);
@@ -531,6 +584,12 @@ int drawTitle(int state) {
 
 			if (inBounds(buttonDifficulty[a].projectedRect)) {
 				drawSmoothRectagle(buttonDifficulty[a].projectedRect, wineColor.r, wineColor.g, wineColor.b, wineColor.a, buttonDifficulty[a].projectedRect.w / 6);
+				if (gameAttr->difficulty == a) {
+					// Makes it a little clearer that this is the selected difficulty
+					TTF_SetTextColor(selectTxt, goldColor.r, goldColor.g, goldColor.b, goldColor.a);
+				} else {
+					TTF_SetTextColor(selectTxt, whiteColor.r, whiteColor.g, whiteColor.b, whiteColor.a);
+				}
 				displayTextAsSurface(buttonDifficulty[a], selectTxt);
 			}
 		}
@@ -539,6 +598,7 @@ int drawTitle(int state) {
 			drawLogo((difficultyRects[a].projectedRect.x), (difficultyRects[a].projectedRect.y), (difficultyRects[a].projectedRect.w), false);
 			// Giving it a different color so it stands out
 			drawSmoothRectagle(buttonDifficulty[a].projectedRect, greenColor.r, greenColor.g, greenColor.b, greenColor.a, buttonDifficulty[a].projectedRect.w / 6);
+
 			displayTextAsSurface(buttonDifficulty[a], backTxt);
 		}
 	}
@@ -572,6 +632,11 @@ int drawTitle(int state) {
 	if (difficulty != -1)  {
 		drawSmoothRectagle(beginGameLogo.projectedRect, wineColor.r, wineColor.g, wineColor.b, wineColor.a, beginGameLogo.projectedRect.w / 6);
 		displayTextAsSurface(beginGameLogo, playTxt);
+		displayTextAsSurface(difficultyName, difficultyNameTxt[difficulty]);
+	}
+	else {
+		// Title when no difficulty selected
+		displayTextAsSurface(difficultyName, difficultyNameTxt[DIFFICULTY_COUNT]);
 	}
 
 	// Button that takes us back to the main menu from the difficulty select

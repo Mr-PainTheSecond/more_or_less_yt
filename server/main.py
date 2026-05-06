@@ -56,7 +56,6 @@ class YouTubeData():
             file.write(rResponse.content)
             with self.lock:
                 self.filesNames[index] = f"{self.path}test{count}.png"
-                utilities.writeData(self.storage, self, index)
                 
         
         
@@ -188,7 +187,7 @@ class YouTubeData():
         for j in range(len(self.urls)):
             # Force the file names to be the size we want it to be
             self.filesNames.append(-1)
-            index = utilities.randNoDupe(0, 300, globals.sentIndexes)
+            index = utilities.randNoDupe(0, globals.IMG_CAPICITY, globals.sentIndexes)
             usedIndexes.append(index)
             globals.sentIndexes.append(index)   
             newThread = threading.Thread(None, self.downloadThumbnail, args=(self.urls[j], index, j))
@@ -196,8 +195,8 @@ class YouTubeData():
                 print(self.urls[j] + " " + self.viewCounts[j])
             self.threads.append(newThread)
         
-        network = threading.Thread(None, messageManager.findConnection, args = (usedIndexes, ))
-        backupNetwork = threading.Thread(None, messageManager.findConnection, args = (usedIndexes, True,  )) 
+        network = threading.Thread(None, messageManager.findConnection, args = (self.lock, usedIndexes, ))
+        backupNetwork = threading.Thread(None, messageManager.findConnection, args = (self.lock, usedIndexes, True,  )) 
         
        
         globals.downloadComplete = False
@@ -229,7 +228,13 @@ class YouTubeData():
             backupNetwork.join()     
         
 
-
+        for index in range(len(self.urls) - 1):
+            # Flags indicating couldn't download video
+            if self.filesNames[index] != -1:
+                utilities.writeData(self.storage, self, index)
+        
+        globals.sentIndexes.clear()
+        
         print("[green]Cycle complete")
         for file in self.filesNames:
             if file == -1:
@@ -263,16 +268,20 @@ class YouTubeData():
 if __name__ == "__main__":
     global messageManager
     firstIndex = 0
+    
+    utilities.documentCurrentEntries("storage.json")
     messageManager = Messages()
     # firstBatch = utilities.getStorageData("storage.txt")
     
+    # This lock is used for the first iteration only
+    firstLock = threading.Lock()
     # For running in debug modes
     try:
         globals.args = sys.argv[1]
     except IndexError:
         pass
     if globals.args != "fill":
-        messageManager.findConnection()  
+        messageManager.findConnection(firstLock)  
     
     repetitions = 0
     while globals.serverRunning:
