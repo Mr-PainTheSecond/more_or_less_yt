@@ -26,11 +26,12 @@ except ImportError:
     sys.exit(0)
 
 class YouTubeData():
-    def __init__(self, firstIndex):
+    def __init__(self, firstIndex = 0, path = "..\\assets\\images\\temp\\", storage = "storage.json"):
         self.threads: list[threading.Thread] = list()
         self.urls = []
         self.lock = threading.Lock()
-        self.path = "..\\assets\\images\\temp\\"
+        self.path = path
+        self.storage = storage
         self.indexes = []
         self.noConnection = False
 
@@ -44,6 +45,7 @@ class YouTubeData():
         load_dotenv()
         self.youtube = google.build("youtube", "v3", developerKey=os.getenv("YOUTUBE_API"))
         os.chdir("server\\")
+        
 
     def downloadThumbnail(self, url, count, index):
         thumnailUrl = self.getThumnbnailUrl(url, count, index)
@@ -54,7 +56,6 @@ class YouTubeData():
             file.write(rResponse.content)
             with self.lock:
                 self.filesNames[index] = f"{self.path}test{count}.png"
-                utilities.writeData("storage.txt", self, index)
                 
         
         
@@ -164,11 +165,14 @@ class YouTubeData():
         result = self.cursor.fetchall()
         self.getFromYoutube(result)
     
-    def getData(self):
+    def getData(self, count = 30):
+        a = 0
+        
+        # Database stuff
         self.connection = sqlite3.connect("youtube.db")
         self.cursor = self.connection.cursor()
-        a = 0
-        for i in range(30):
+        
+        for i in range(count):
             self.handleCategory()
             if globals.args == "view_test":
                 try:
@@ -183,7 +187,7 @@ class YouTubeData():
         for j in range(len(self.urls)):
             # Force the file names to be the size we want it to be
             self.filesNames.append(-1)
-            index = utilities.randNoDupe(0, 300, globals.sentIndexes)
+            index = utilities.randNoDupe(0, globals.IMG_CAPICITY, globals.sentIndexes)
             usedIndexes.append(index)
             globals.sentIndexes.append(index)   
             newThread = threading.Thread(None, self.downloadThumbnail, args=(self.urls[j], index, j))
@@ -191,21 +195,46 @@ class YouTubeData():
                 print(self.urls[j] + " " + self.viewCounts[j])
             self.threads.append(newThread)
         
-        network = threading.Thread(None, messageManager.findConnection, args = (usedIndexes, )) 
+        network = threading.Thread(None, messageManager.findConnection, args = (self.lock, usedIndexes, ))
+        backupNetwork = threading.Thread(None, messageManager.findConnection, args = (self.lock, usedIndexes, True,  )) 
+        
+       
+        globals.downloadComplete = False
         
         for thread in self.threads:
             thread.start()
         
+        # Starts the main server
         if globals.args != "fill":
             network.start()
+            
+        if globals.args != "fill":
+            network.join()    
+        
+        print("Main Network has finished")
+        
+        # Once the main server is done, we will do backup
+        if globals.args != "fill":
+            backupNetwork.start() 
         
         for thread in self.threads:
             thread.join()
         
+        # This will make backup quit next iteration
+        with self.lock:
+            globals.downloadComplete = True
+        
         if globals.args != "fill":
-            network.join()
+            backupNetwork.join()     
+        
 
-
+        for index in range(len(self.urls) - 1):
+            # Flags indicating couldn't download video
+            if self.filesNames[index] != -1:
+                utilities.writeData(self.storage, self, index)
+        
+        globals.sentIndexes.clear()
+        
         print("[green]Cycle complete")
         for file in self.filesNames:
             if file == -1:
@@ -239,21 +268,45 @@ class YouTubeData():
 if __name__ == "__main__":
     global messageManager
     firstIndex = 0
+    
+    utilities.documentCurrentEntries("storage.json")
     messageManager = Messages()
     # firstBatch = utilities.getStorageData("storage.txt")
     
+    # This lock is used for the first iteration only
+    firstLock = threading.Lock()
     # For running in debug modes
     try:
         globals.args = sys.argv[1]
     except IndexError:
         pass
     if globals.args != "fill":
-        messageManager.findConnection()  
+        messageManager.findConnection(firstLock)  
     
     repetitions = 0
     while globals.serverRunning:
         dataManager = YouTubeData(firstIndex)
-        dataManager.getData()
+        
+        # Data Collection takes time!!
+        serverBuffer = threading.Thread(None, messageManager.findConnection, args = ([], True,  ))
+        dataCollector = threading.Thread(None, dataManager.getData)
+        
+        globals.downloadComplete = False
+        
+        if globals.args != "fill":
+            serverBuffer.start()
+        
+        dataCollector.start()
+        
+        
+        dataCollector.join()
+        
+        with dataManager.lock:
+            globals.downloadComplete = True
+        
+        if globals.args != "fill":
+            serverBuffer.join()
+        
         dataManager.getThumbnails()
         dataManager.clearAllLists()
         firstIndex = (len(dataManager.filesNames) + firstIndex) % 100

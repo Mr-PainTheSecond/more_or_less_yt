@@ -8,4 +8,5 @@ zsock_t* establishConnection();
 bool getYtData(zsock_t* connection, Queue* queue);
 SDL_FRect createRect(float x, float y, float w, float h, bool centered);
 void startServer();
+//void continueGame(zsock_t* connection);
 #endif

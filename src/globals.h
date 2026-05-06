@@ -8,8 +8,8 @@
 SDL_Renderer* renderer;
 SDL_Window* window;
 typedef struct screen {
-	int w;
-	int h;
+	float w;
+	float h;
 	SDL_DisplayID id;
 	SDL_Surface* surface;
 } Screen;
@@ -17,7 +17,7 @@ Screen* screen;
 typedef struct fonts {
 	TTF_Font** fonts;
 	int fontIndex;
-	float fontSize;
+	int fontSize;
 } Fonts;
 
 typedef struct ytNode {
@@ -34,6 +34,7 @@ typedef struct gameAttributes {
 	int timer;
 	int health;
 	int state;
+	int difficulty;
 	// Debug exclusive variables
 	bool frameByFrame;
 	int lifeImmunity;
@@ -44,13 +45,29 @@ typedef struct dText {
 	char* str;
 } DynamicText;
 
+typedef struct vector2D {
+	float x;
+	float y;
+} Vector2D;
+
 typedef struct queue {
 	YTNode* front;
 	YTNode* back;
 	int size;
 } Queue;
 
-enum states {title, normal,
+typedef struct projectedObject {
+	SDL_FRect realRect;
+	SDL_FRect projectedRect;
+} ProjectedObject;
+
+typedef struct multiLineText {
+	TTF_Text** lines;
+	ProjectedObject* lineRects;
+	int lineCount;
+} MultiLineText;
+
+enum states {title, titleAni, titleDiff, titleToNormal, normal,
 	moreRight, moreWrong, lessRight, lessWrong, 
 	justQuit, justLost, justWon, gameOver, gameWon, shutDown};
 enum toggles {enableW = 1, enableS, disableEsc, enableEsc, disableS, disableW};
@@ -59,10 +76,17 @@ enum difficulties {standard, noSubs, timer, pointDeduct, lessHeart, noMil, harsh
 
 SDL_Color ytRed;
 Fonts* fontArray;
+char** offlineVideos;
+int offlineVideoCount;
 TTF_Font* smallFont;
 TTF_Font* moreLessFont;
 TTF_Font* timerFont;
 TTF_Font* ytFont;
+
+
+SDL_FRect diffToTitle;
+SDL_FRect diffToPlay;
+ProjectedObject* diffSelect;
 int difficulty;
 TTF_TextEngine* textEngine;
 Queue* ytQueue;

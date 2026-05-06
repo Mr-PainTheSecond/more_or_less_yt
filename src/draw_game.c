@@ -191,8 +191,10 @@ int drawMoreOrLess(TTF_Text* moreTxt, TTF_Text* lessTxt, Queue* queue) {
 		nextTxt = NULL;
 		// Reset everything to default values
 		gameAttr->score = 0;
-		time = STARTING_TIME;
 		gameAttr->timer = STARTING_TIME;
+		time = STARTING_TIME;
+		
+
 		if (gameAttr->state == justWon) {
 			gameAttr->state = gameWon;
 		}
@@ -246,6 +248,8 @@ int drawMoreOrLess(TTF_Text* moreTxt, TTF_Text* lessTxt, Queue* queue) {
 		if (difficulty >= lessHeart) {
 			mrBeastPos = malloc(sizeof(SDL_FRect) * 2);
 			heartCount = 2;
+			// Update global count
+			gameAttr->health = 2;
 		}
 		else {
 			mrBeastPos = malloc(sizeof(SDL_FRect) * 3);
@@ -256,6 +260,11 @@ int drawMoreOrLess(TTF_Text* moreTxt, TTF_Text* lessTxt, Queue* queue) {
 			fprintf(stderr, "%s\n", "Alloc for mrBeast postions have failed");
 			quit(ytQueue);
 			exit(1);
+		}
+
+		if (difficulty >= harshTimer) {
+			time = STARTING_TIME_HARSH;
+			gameAttr->timer = STARTING_TIME_HARSH;
 		}
 	}
 	
@@ -338,7 +347,16 @@ int drawMoreOrLess(TTF_Text* moreTxt, TTF_Text* lessTxt, Queue* queue) {
 	SDL_FRect timerRect = createRect(w / 2, h / 4, w / 8, h / 8, true);
 
 	for (int a = 0; a < heartCount; a++) {
-		float beastX = w / 2 + ((w / 12) * (a - 1));
+		float beastX;
+		if (heartCount == 3) {
+			// 3 hearts, so we want them to be centered around the middle of the screen
+			 beastX = w / 2 + ((w / 12) * (a - 1));
+		}
+		else {
+			// 2 hearts, so we want them to be centered around the middle of the screen, but shifted a bit to the left
+			beastX = w / 2 + ((w / 12) * (a - 0.5));
+		}
+
 		mrBeastPos[a] = createRect(beastX, h * 23 / 24, w / 12, h / 12, true);
 	}
 
@@ -374,7 +392,7 @@ int drawMoreOrLess(TTF_Text* moreTxt, TTF_Text* lessTxt, Queue* queue) {
 	drawRectangle(&moreImg, 128, 128, 128, SDL_ALPHA_OPAQUE, true);
 	drawRectangle(&lessImg, 0, 0, 0, SDL_ALPHA_OPAQUE, true);
 	drawRectangle(&hiddenImg, 0, 0, 0, SDL_ALPHA_OPAQUE, true);
-	drawLogo(w / 2, h / 16, w / 8);
+	drawLogo(w / 2, h / 16, w / 8, true);
 	// The Rectangle that says "More"
 	drawRectangle(&more, 0, 83, 10, SDL_ALPHA_OPAQUE, true);
 	drawRectangle(&hiddenMore, 0, 83, 10, SDL_ALPHA_OPAQUE, true);
@@ -410,6 +428,7 @@ int drawMoreOrLess(TTF_Text* moreTxt, TTF_Text* lessTxt, Queue* queue) {
 
 	moreLessTxt(moreTxt, more, lessTxt, less, gameAttr->state);
 	if (gameAttr->state != normal) {
+		// Colors is gold (makes views pop out)
 		TTF_SetTextColor(views->text, 255, 233, 0, SDL_ALPHA_OPAQUE);
 		TTF_SetTextColor(mysteryText->text, 255, 233, 0, SDL_ALPHA_OPAQUE);
 	}
