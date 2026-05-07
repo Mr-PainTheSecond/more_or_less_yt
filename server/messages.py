@@ -6,7 +6,6 @@ import utilities
 import threading
 from rich import print
 
-lock = threading.Lock()
 
 class Messages:
     def __init__(self):
@@ -17,7 +16,7 @@ class Messages:
         # Time out after 5 seconds
         self.socket.setsockopt(zmq.RCVTIMEO, 1000)
     
-    def findConnection(self, illegalIndex = [], backup = False):
+    def findConnection(self, lock: threading.Lock, illegalIndex = [], backup = False):
         # The download is complete when we got here
         with lock:
             if backup and globals.downloadComplete:
@@ -65,17 +64,20 @@ class Messages:
                 return
         print("[green]Established a connection")
         with lock:
-            batch = utilities.getStorageData("storage.txt", illegalIndex)
+            batch = utilities.getStorageData("storage.json", illegalIndex)
             self.sendYTData(batch["views"], batch["file"], batch["subs"])
         
         return True
     
     def sendYTData(self, views, fileNames, subCount):
         for view, file, subs in zip(views, fileNames, subCount, strict=True):
+            print("views " + view)
             self.socket.send_string(view)
             self.socket.recv()
+            print("file " + file)
             self.socket.send_string(file)
             self.socket.recv()
+            print("subs " + subs)
             self.socket.send_string(subs)
             self.socket.recv()
         

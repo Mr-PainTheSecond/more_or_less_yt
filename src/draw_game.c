@@ -428,6 +428,7 @@ int drawMoreOrLess(TTF_Text* moreTxt, TTF_Text* lessTxt, Queue* queue) {
 
 	moreLessTxt(moreTxt, more, lessTxt, less, gameAttr->state);
 	if (gameAttr->state != normal) {
+		// Colors is gold (makes views pop out)
 		TTF_SetTextColor(views->text, 255, 233, 0, SDL_ALPHA_OPAQUE);
 		TTF_SetTextColor(mysteryText->text, 255, 233, 0, SDL_ALPHA_OPAQUE);
 	}
