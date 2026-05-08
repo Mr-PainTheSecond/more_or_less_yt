@@ -13,7 +13,7 @@ class Messages:
         self.path = "../assets/images/temp/"
         self.socket = self.context.socket(zmq.REP)
         self.socket.bind("tcp://*:5555")
-        # Time out after 5 seconds
+        # Time out after 1 second
         self.socket.setsockopt(zmq.RCVTIMEO, 1000)
     
     def findConnection(self, lock: threading.Lock, illegalIndex = [], backup = False):

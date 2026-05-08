@@ -1,5 +1,6 @@
 import os
 import globals
+import requests
 import json
 from rich import print
 import random
@@ -64,13 +65,13 @@ def deleteEntry(file, views):
     with open(file, "w") as data:
         data.write(text)
 
-def realIndex(text: dict | str, fromJson = True):
+def realIndex(text: dict[str, str] | str, fromJson = True):
 
 
     rIndex: str = ""
     try:
         if fromJson: 
-            rIndex= text["file_name"]
+            rIndex= str(text["file_name"]) # type: ignore
         else:
             rIndex = str(text)
     except IndexError:
@@ -96,6 +97,17 @@ def documentCurrentEntries(file_name: str):
             print(realIndex(entries))
             globals.indexInJson[realIndex(entries)] = True
 
+"""Pings Google to check whether the user has internet connection"""
+def connectionExists():
+    timeout = 1
+    
+    try:
+        requests.head("http://www.google.com/", timeout=timeout)
+        
+        return True
+    except requests.ConnectionError:
+        
+        return False
 
 def getStorageData(file, illegalIndexes = []):
     allData = {"file": [], "views": [], "subs": []}

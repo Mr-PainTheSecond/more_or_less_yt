@@ -2,6 +2,24 @@
 
 zsock_t* establishConnection() {
 	zsock_t* requester = zsock_new(ZMQ_REQ);
+
+
+	int* timeOut = malloc(sizeof(int));
+
+	if (timeOut == NULL) {
+		fprintf(stderr, "%s\n", "No mem for timeOut");
+		SDL_DestroySurface(screen->surface);
+		free(screen);
+		freeFontArray();
+		SDL_DestroyWindow(window);
+		SDL_DestroyRenderer(renderer);
+		SDL_Quit();
+		exit(1);
+	}
+
+	zsock_set_rcvtimeo(requester, 2000);
+
+
 	if (zsock_connect(requester, "tcp://localhost:5555")) {
 		fprintf(stderr, "%s\n", "Connection failed");
 		SDL_DestroySurface(screen->surface);
@@ -13,7 +31,10 @@ zsock_t* establishConnection() {
 		exit(1);
 	}
 
+
+	printf("Set time out\n");
 	zstr_send(requester, "Roger");
+	printf("Message sent\n");
 	return requester;
 }
 
@@ -86,6 +107,7 @@ void storeYTData(Queue* queue, char* sData, int data, char* file_name, char* sub
 /*When the server goes offline or is busy, this handles all the parts 
 which are different when the server isn't involved*/
 void storeYTDataOffline(Queue* queue, char* filePath, int count) {
+	printf("%s\n", "Using offline data");
 	char** chosenVideos = malloc(sizeof(char*) * count);
 	if (chosenVideos == NULL) {
 		fprintf(stderr, "%s\n", "No storage for the videos :(");
@@ -162,7 +184,14 @@ requests for more. If the server is busy or offline, we use
 data that is readily avaliable. Otherwise, data from the
 SQL db and stuff from the Google API is used*/
 bool getYtData(zsock_t* connection, Queue* queue) {
+	printf("Trying to get data\n");
 	char* data = zstr_recv(connection);
+	printf("Passed timeout\n");
+	printf("%p\n", data);
+	if (data == NULL) {
+		storeYTDataOffline(queue, "..\\assets\\data\\offline_storage.txt", 20);
+		return true;
+	}
 
 	// Server is busy getting data, so we need to use offline data
 	if (strcmp(data, "NOT_READY") == 0) {

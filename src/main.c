@@ -346,6 +346,9 @@ int main() {
 	bool aboutToQuit = false;
 
 	bool fullScreen = FULLSCREEN;
+
+	offlineVideos = readAndSplit("..\\assets\\data\\offline_storage.txt", '\n', &offlineVideoCount);
+
 	startServer();
 	requester =  establishConnection();
 	ytQueue = createQueue();
@@ -383,7 +386,6 @@ int main() {
 	}
 
 
-	/*offlineVideos = readAndSplit("..\\assets\\data\\offline_storage.txt", '\n', &offlineVideoCount);*/
 
 	clock_t timeClocked = clock();
 	clock_t cooldown = clock();

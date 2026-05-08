@@ -10,6 +10,7 @@ try:
     import random
     import threading
     import httplib2.error
+    import requests
     import sys
     from dotenv import load_dotenv
     from rich import print
@@ -64,7 +65,7 @@ class YouTubeData():
             "quiet": True,
             "no_warnings": True
         }
-        with ytd.YoutubeDL(options) as ydl:
+        with ytd.YoutubeDL(options) as ydl: # type: ignore
             try:
                 thumbnailUrl = ydl.extract_info(url, download=False)
                 return thumbnailUrl.get("thumbnail")
@@ -83,6 +84,7 @@ class YouTubeData():
             response = request.execute()
         except httplib2.error.ServerNotFoundError:
             self.noConnection = True
+            globals.serverRunning = False
             print("HELLO")
             if globals.args != "fill":
                 messageManager.sendNetworkError()
@@ -195,6 +197,9 @@ class YouTubeData():
                 print(self.urls[j] + " " + self.viewCounts[j])
             self.threads.append(newThread)
         
+        if not utilities.connectionExists():
+            sys.exit(0)
+        
         network = threading.Thread(None, messageManager.findConnection, args = (self.lock, usedIndexes, ))
         backupNetwork = threading.Thread(None, messageManager.findConnection, args = (self.lock, usedIndexes, True,  )) 
         
@@ -281,6 +286,10 @@ if __name__ == "__main__":
     except IndexError:
         pass
     if globals.args != "fill":
+        
+        if not utilities.connectionExists():
+            sys.exit(0)
+        
         messageManager.findConnection(firstLock)  
     
     repetitions = 0
@@ -288,6 +297,8 @@ if __name__ == "__main__":
         dataManager = YouTubeData(firstIndex)
         
         # Data Collection takes time!!
+        if not utilities.connectionExists():
+            sys.exit(0)
         serverBuffer = threading.Thread(None, messageManager.findConnection, args = ([], True,  ))
         dataCollector = threading.Thread(None, dataManager.getData)
         
