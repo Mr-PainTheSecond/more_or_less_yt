@@ -10,6 +10,7 @@ try:
     import random
     import threading
     import httplib2.error
+    import requests
     import sys
     from dotenv import load_dotenv
     from rich import print
@@ -26,7 +27,7 @@ except ImportError:
     sys.exit(0)
 
 class YouTubeData():
-    def __init__(self, firstIndex = 0, path = "..\\assets\\images\\temp\\", storage = "storage.txt"):
+    def __init__(self, firstIndex = 0, path = "..\\assets\\images\\temp\\", storage = "storage.json"):
         self.threads: list[threading.Thread] = list()
         self.urls = []
         self.lock = threading.Lock()
@@ -56,7 +57,6 @@ class YouTubeData():
             file.write(rResponse.content)
             with self.lock:
                 self.filesNames[index] = f"{self.path}test{count}.png"
-                utilities.writeData(self.storage, self, index)
                 
         
         
@@ -65,7 +65,7 @@ class YouTubeData():
             "quiet": True,
             "no_warnings": True
         }
-        with ytd.YoutubeDL(options) as ydl:
+        with ytd.YoutubeDL(options) as ydl: # type: ignore
             try:
                 thumbnailUrl = ydl.extract_info(url, download=False)
                 return thumbnailUrl.get("thumbnail")
@@ -84,6 +84,7 @@ class YouTubeData():
             response = request.execute()
         except httplib2.error.ServerNotFoundError:
             self.noConnection = True
+            globals.serverRunning = False
             print("HELLO")
             if globals.args != "fill":
                 messageManager.sendNetworkError()
@@ -150,17 +151,28 @@ class YouTubeData():
         
         category = random.choice(globals.typeList)
         result = None
-        if globals.args != "view_test":
+        # Forces videos from Jacksepticeye so we can check if views are good
+        if globals.args == "view_test":
+            self.cursor.execute("SELECT * FROM youtube where CHANNEL = \'jacksepticeye\'")
+        
+        else:
             if category == "gaming":
                 self.cursor.execute("SELECT * FROM youtube WHERE category_id = 20")
             elif category == "beauty":
                 self.cursor.execute("SELECT * FROM youtube WHERE category_id = 26")
             elif category == "music":
                 self.cursor.execute("SELECT * FROM youtube WHERE category_id = 10")
+            elif category == "pets":
+                self.cursor.execute("SELECT * FROM youtube WHERE category_id = 15")
+            elif category == "sports":
+                self.cursor.execute("SELECT * FROM youtube WHERE category_id = 17")
+            elif category == "politics":
+                self.cursor.execute("SELECT * FROM youtube WHERE category_id = 25")
+            elif category == "science":
+                self.cursor.execute("SELECT * FROM youtube WHERE category_id = 28")
             elif category == "random":
                 self.cursor.execute("SELECT * FROM youtube")
-        else:
-            self.cursor.execute("SELECT * FROM youtube where CHANNEL = \'jacksepticeye\'")
+        
 
         
         result = self.cursor.fetchall()
@@ -188,7 +200,7 @@ class YouTubeData():
         for j in range(len(self.urls)):
             # Force the file names to be the size we want it to be
             self.filesNames.append(-1)
-            index = utilities.randNoDupe(0, 300, globals.sentIndexes)
+            index = utilities.randNoDupe(0, globals.IMG_CAPICITY, globals.sentIndexes)
             usedIndexes.append(index)
             globals.sentIndexes.append(index)   
             newThread = threading.Thread(None, self.downloadThumbnail, args=(self.urls[j], index, j))
@@ -196,8 +208,11 @@ class YouTubeData():
                 print(self.urls[j] + " " + self.viewCounts[j])
             self.threads.append(newThread)
         
-        network = threading.Thread(None, messageManager.findConnection, args = (usedIndexes, ))
-        backupNetwork = threading.Thread(None, messageManager.findConnection, args = (usedIndexes, True,  )) 
+        if not utilities.connectionExists():
+            sys.exit(0)
+        
+        network = threading.Thread(None, messageManager.findConnection, args = (self.lock, usedIndexes, ))
+        backupNetwork = threading.Thread(None, messageManager.findConnection, args = (self.lock, usedIndexes, True,  )) 
         
        
         globals.downloadComplete = False
@@ -229,7 +244,13 @@ class YouTubeData():
             backupNetwork.join()     
         
 
-
+        for index in range(len(self.urls) - 1):
+            # Flags indicating couldn't download video
+            if self.filesNames[index] != -1:
+                utilities.writeData(self.storage, self, index)
+        
+        globals.sentIndexes.clear()
+        
         print("[green]Cycle complete")
         for file in self.filesNames:
             if file == -1:
@@ -263,22 +284,37 @@ class YouTubeData():
 if __name__ == "__main__":
     global messageManager
     firstIndex = 0
+    
+    utilities.documentCurrentEntries("storage.json")
     messageManager = Messages()
     # firstBatch = utilities.getStorageData("storage.txt")
     
+    # This lock is used for the first iteration only
+    firstLock = threading.Lock()
     # For running in debug modes
     try:
         globals.args = sys.argv[1]
     except IndexError:
         pass
     if globals.args != "fill":
-        messageManager.findConnection()  
+        
+         
+        
+        if not utilities.connectionExists():
+            messageManager.sendNetworkError()
+        # We can start sending data if internet connection
+        else:
+            messageManager.findConnection(firstLock)  
     
     repetitions = 0
     while globals.serverRunning:
         dataManager = YouTubeData(firstIndex)
         
-        # Data Collection takes time!!
+       
+        if not utilities.connectionExists():
+            messageManager.sendNetworkError()
+            continue
+         # Data Collection takes time!!
         serverBuffer = threading.Thread(None, messageManager.findConnection, args = ([], True,  ))
         dataCollector = threading.Thread(None, dataManager.getData)
         

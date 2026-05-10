@@ -26,6 +26,7 @@
     <ClCompile Include="..\src\font.c" />
     <ClCompile Include="..\src\main.c" />
     <ClCompile Include="..\src\server.c" />
+    <ClCompile Include="..\src\title_helper.c" />
     <ClCompile Include="..\src\utilities.c" />
   </ItemGroup>
   <ItemGroup>
@@ -38,6 +39,7 @@
     <ClInclude Include="..\src\font.h" />
     <ClInclude Include="..\src\globals.h" />
     <ClInclude Include="..\src\server.h" />
+    <ClInclude Include="..\src\title_helper.h" />
     <ClInclude Include="..\src\utilities.h" />
     <ClInclude Include="resource.h" />
   </ItemGroup>

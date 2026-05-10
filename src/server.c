@@ -2,6 +2,24 @@
 
 zsock_t* establishConnection() {
 	zsock_t* requester = zsock_new(ZMQ_REQ);
+
+
+	int* timeOut = malloc(sizeof(int));
+
+	if (timeOut == NULL) {
+		fprintf(stderr, "%s\n", "No mem for timeOut");
+		SDL_DestroySurface(screen->surface);
+		free(screen);
+		freeFontArray();
+		SDL_DestroyWindow(window);
+		SDL_DestroyRenderer(renderer);
+		SDL_Quit();
+		exit(1);
+	}
+
+	zsock_set_rcvtimeo(requester, 2000);
+
+
 	if (zsock_connect(requester, "tcp://localhost:5555")) {
 		fprintf(stderr, "%s\n", "Connection failed");
 		SDL_DestroySurface(screen->surface);
@@ -13,13 +31,16 @@ zsock_t* establishConnection() {
 		exit(1);
 	}
 
+
+	printf("Set time out\n");
 	zstr_send(requester, "Roger");
+	printf("Message sent\n");
 	return requester;
 }
 
 /*With the data grabbed from the backend/offline, will add every datapoint which partains to each
 video. This includes: View Count (int and char*), file name, and sub counts */
-void storeYTData(Queue* queue, char* sData, int data, char* file_name, char* subCount) {
+void storeYTData(Queue* queue, char* sData, u_int64 data, char* file_name, char* subCount) {
 	YTNode* dataNode = malloc(sizeof(YTNode));
 	if (dataNode == NULL) {
 		quit(queue);
@@ -35,8 +56,7 @@ void storeYTData(Queue* queue, char* sData, int data, char* file_name, char* sub
 		queue->back = dataNode;
 	}
 
-	queue->size++;
-	dataNode->views = data;
+	dataNode->views = (float)data;
 	dataNode->filePath = malloc(sizeof(char) * strlen(file_name) + 1);
 	if (dataNode->filePath == NULL) {
 		quit(queue);
@@ -72,6 +92,8 @@ void storeYTData(Queue* queue, char* sData, int data, char* file_name, char* sub
 
 	dataNode->img = SDL_CreateTextureFromSurface(renderer, surf);
 	SDL_DestroySurface(surf);
+
+	queue->size++;
 	//printf("%s\n", dataNode->filePath);
 	//printf("%s\n", dataNode->sViews);
 	dataNode->next = NULL;
@@ -86,6 +108,7 @@ void storeYTData(Queue* queue, char* sData, int data, char* file_name, char* sub
 /*When the server goes offline or is busy, this handles all the parts 
 which are different when the server isn't involved*/
 void storeYTDataOffline(Queue* queue, char* filePath, int count) {
+	printf("%s\n", "Using offline data");
 	char** chosenVideos = malloc(sizeof(char*) * count);
 	if (chosenVideos == NULL) {
 		fprintf(stderr, "%s\n", "No storage for the videos :(");
@@ -139,7 +162,7 @@ void storeYTDataOffline(Queue* queue, char* filePath, int count) {
 			free(dataPoint[a]);
 		}
 
-		int views = convertToInt(sViews);
+		u_int64 views = convertToInt(sViews);
 
 		/*printf("Subs: %s\n", subs);
 		printf("Views: %s\n", sViews);
@@ -162,7 +185,14 @@ requests for more. If the server is busy or offline, we use
 data that is readily avaliable. Otherwise, data from the
 SQL db and stuff from the Google API is used*/
 bool getYtData(zsock_t* connection, Queue* queue) {
+	printf("Trying to get data\n");
 	char* data = zstr_recv(connection);
+	printf("Passed timeout\n");
+	printf("%p\n", data);
+	if (data == NULL) {
+		storeYTDataOffline(queue, "..\\assets\\data\\offline_storage.txt", 20);
+		return true;
+	}
 
 	// Server is busy getting data, so we need to use offline data
 	if (strcmp(data, "NOT_READY") == 0) {

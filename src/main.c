@@ -9,9 +9,11 @@
 
 int moreOrLess(bool more, Queue* queue, int score, int* state) {
 
-	int viewPublic = queue->front->views;
+	u_int64 viewPublic = queue->front->views;
 	YTNode* nextNode = queue->front->next;
-	int privateViews = nextNode->views;
+	u_int64 privateViews = nextNode->views;
+
+	printf("Shown Views: %llu Hidden Views: %llu\n", viewPublic, privateViews);
 	//deQueue(queue, nextNode);
 	if (more) {
 		if (privateViews >= viewPublic) {
@@ -204,6 +206,8 @@ GameAttributes* initializeAttr(void) {
 	// This should be title on non-debug versions
 	newAttr->state = DEFAULT_GAME_STATE;
 
+	newAttr->difficulty = -1;
+
 	newAttr->frameByFrame = false;
 	// Signals it is not relevent rn
 	newAttr->timer = STARTING_TIME;
@@ -303,6 +307,7 @@ void handleMouseClick(SDL_MouseButtonEvent button, bool* aboutToQuit, int* timeC
 		if (isPressed(event.button, backRect)) {
 			gameAttr->state = titleAni;
 			difficulty = -1;
+			gameAttr->difficulty = -1;
 			printf("It is pressed\n");
 			// Can technically be pressed when invisible, so ignore it if it is
 		} else if (isPressed(event.button, playRect) && difficulty != -1) {
@@ -315,7 +320,15 @@ void handleMouseClick(SDL_MouseButtonEvent button, bool* aboutToQuit, int* timeC
 				printf("%f\n", diffRects[a].projectedRect.x);
 				if (isPressed(event.button, diffRects[a].projectedRect)) {
 					printf("Hola\n");
-					difficulty = a;
+					if (gameAttr->difficulty != a) {
+						difficulty = a;
+						gameAttr->difficulty = a;
+					}
+					// If already selected, deselect it
+					else {
+						difficulty = -1;
+						gameAttr->difficulty = -1;
+					}
 					break;
 				}
 			}
@@ -335,6 +348,9 @@ int main() {
 	bool aboutToQuit = false;
 
 	bool fullScreen = FULLSCREEN;
+
+	offlineVideos = readAndSplit("..\\assets\\data\\offline_storage.txt", '\n', &offlineVideoCount);
+
 	startServer();
 	requester =  establishConnection();
 	ytQueue = createQueue();
@@ -371,8 +387,7 @@ int main() {
 		return -1;
 	}
 
-	
-	offlineVideos = readAndSplit("..\\assets\\data\\offline_storage.txt", '\n', &offlineVideoCount);
+
 
 	clock_t timeClocked = clock();
 	clock_t cooldown = clock();
@@ -525,7 +540,7 @@ int main() {
 			}
 		}
 		
-		gameAttr->state = draw(moreText, lessText, ytQueue);
+		gameAttr->state = draw(moreText, lessText, ytQueue, &counter);
 
 		clock_t finishTime = clock();
 		// Enforce the FPS

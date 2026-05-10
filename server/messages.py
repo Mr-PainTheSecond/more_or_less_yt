@@ -6,7 +6,6 @@ import utilities
 import threading
 from rich import print
 
-lock = threading.Lock()
 
 class Messages:
     def __init__(self):
@@ -14,10 +13,10 @@ class Messages:
         self.path = "../assets/images/temp/"
         self.socket = self.context.socket(zmq.REP)
         self.socket.bind("tcp://*:5555")
-        # Time out after 5 seconds
+        # Time out after 1 second
         self.socket.setsockopt(zmq.RCVTIMEO, 1000)
     
-    def findConnection(self, illegalIndex = [], backup = False):
+    def findConnection(self, lock: threading.Lock, illegalIndex = [], backup = False):
         # The download is complete when we got here
         with lock:
             if backup and globals.downloadComplete:
@@ -65,25 +64,36 @@ class Messages:
                 return
         print("[green]Established a connection")
         with lock:
-            batch = utilities.getStorageData("storage.txt", illegalIndex)
+            batch = utilities.getStorageData("storage.json", illegalIndex)
             self.sendYTData(batch["views"], batch["file"], batch["subs"])
         
         return True
     
     def sendYTData(self, views, fileNames, subCount):
         for view, file, subs in zip(views, fileNames, subCount, strict=True):
+            print("views " + view)
             self.socket.send_string(view)
             self.socket.recv()
+            print("file " + file)
             self.socket.send_string(file)
             self.socket.recv()
+            print("subs " + subs)
             self.socket.send_string(subs)
             self.socket.recv()
         
         self.socket.send_string("-1")
     
     def sendNetworkError(self):
-        self.socket.recv()
-        self.socket.send_string("LOST")
+        try:
+            theResponse = str(self.socket.recv())
+            self.socket.send_string("LOST")
+            if theResponse == "b\'STOP\'":
+                print("[red]Connection terminated")
+                sys.exit(0)
+        # If we get this error, frotend doesn't need videos so doesn't matter
+        except zmq.error.Again:
+            print("[red]stalling..")
+            return
     # def talkToClient(self, *args):
     #     files = list(args)
     #     while files:

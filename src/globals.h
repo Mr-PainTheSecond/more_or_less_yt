@@ -17,12 +17,12 @@ Screen* screen;
 typedef struct fonts {
 	TTF_Font** fonts;
 	int fontIndex;
-	float fontSize;
+	int fontSize;
 } Fonts;
 
 typedef struct ytNode {
 	struct ytNnode* next;
-	int views;
+	float views;
 	char* filePath;
 	char* sViews;
 	char* subs;
@@ -34,6 +34,7 @@ typedef struct gameAttributes {
 	int timer;
 	int health;
 	int state;
+	int difficulty;
 	// Debug exclusive variables
 	bool frameByFrame;
 	int lifeImmunity;
@@ -60,6 +61,12 @@ typedef struct projectedObject {
 	SDL_FRect projectedRect;
 } ProjectedObject;
 
+typedef struct multiLineText {
+	TTF_Text** lines;
+	ProjectedObject* lineRects;
+	int lineCount;
+} MultiLineText;
+
 enum states {title, titleAni, titleDiff, titleToNormal, normal,
 	moreRight, moreWrong, lessRight, lessWrong, 
 	justQuit, justLost, justWon, gameOver, gameWon, shutDown};
@@ -75,6 +82,7 @@ TTF_Font* smallFont;
 TTF_Font* moreLessFont;
 TTF_Font* timerFont;
 TTF_Font* ytFont;
+
 
 SDL_FRect diffToTitle;
 SDL_FRect diffToPlay;

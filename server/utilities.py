@@ -1,5 +1,8 @@
 import os
 import globals
+import requests
+import json
+from rich import print
 import random
 
 
@@ -10,39 +13,44 @@ def writeData(fileName, data, index):
     currentData = None
     fileData = [data.filesNames[index]]
     viewData = [data.viewCounts[index]]
-    urlData = [data.viewCounts[index]]
+    urlData = [data.urls[index]]
     subData = [data.subCount[index]]
     with open(fileName, "r") as file:
         currentData = file.read()
-        entrySeperate = currentData.split("\n")
- 
-        
-        
-        for location, views, url, subs in zip(fileData, viewData, urlData, subData, strict = True):
-            if location not in currentData:
-                if currentData:
-                    currentData += f"\n{location}: {views}: {url}: {subs}"
-                else:
-                    currentData += f"{location}: {views}: {url}: {subs}"
-            else:
-                workingEntry = [entry for entry in entrySeperate if location in entry]
-                # print(oldView)
-                oldView = workingEntry[0].split(":")[1]
-                oldUrl =  workingEntry[0].split(":")[2]
-                oldSub =  workingEntry[0].split(":")[3]
-                currentData = currentData.replace(": " + oldView, ": " + views)
-                currentData = currentData.replace(": " + oldUrl, ": " + url)
-                currentData = currentData.replace(": " + oldSub, ": " + subs)
-                
-            entrySeperate = currentData.split("\n")
+        currentJSONData: list = json.loads(currentData)
 
-               
+        for location, views, url, subs in zip(fileData, viewData, urlData, subData, strict = True):
+            locationIndex = realIndex(location, False)
+            if not globals.indexInJson[locationIndex]:
+                globals.indexInJson[locationIndex] = True
+                if currentData:
+                    currentJSONData.append({"file_name": location, "views": int(views), "subscribers": int(subs), "video_url": url})
+                else:
+                    currentJSONData.append({"file_name": location, "views": int(views), "subscribers": int(subs), "video_url": url})
+            else:
+                print(f"[red]Location is already present in db {locationIndex}")
+                # Grab the previous entry
+                workingEntry = [entry for entry in currentJSONData if location in entry["file_name"]][0]
+                entryIndex = currentJSONData.index(workingEntry)
+                # print(oldView)
+                
+                newEntry = {"file_name": location, "views": int(views), "subscribers": int(subs), "video_url": url}
+    
+                
+                # Effectively replace the old entry w/ the same img
+                currentJSONData[entryIndex] = newEntry
+                
+                
+
+    newJSONData = json.dumps(currentJSONData, indent=4)           
     with open(fileName, "w") as file:
-        file.write(currentData)    
+        file.write(newJSONData)    
 
 def randNoDupe(minInt, maxInt, used):
+    print(f"Current List {used}")
     randNum = random.randint(minInt, maxInt)
     while randNum in used:
+        print(f"Random used {randNum}")
         randNum = random.randint(minInt, maxInt)
     
     return randNum
@@ -57,81 +65,100 @@ def deleteEntry(file, views):
     with open(file, "w") as data:
         data.write(text)
 
-def realIndex(text: str):
+def realIndex(text: dict[str, str] | str, fromJson = True):
 
 
-    try: 
-        rIndex: str = text.split(":")[0]
+    rIndex: str = ""
+    try:
+        if fromJson: 
+            rIndex= str(text["file_name"]) # type: ignore
+        else:
+            rIndex = str(text)
     except IndexError:
         return -1
     rIndex = rIndex.replace(".png", "").replace("..\\assets\\images\\temp\\test", "")
     return int(rIndex)
 
+"""Documents whether a certain index is already being used for the
+images in the JSON data. Useful for checking for duplicates"""
+def documentCurrentEntries(file_name: str):
+    # Guarantees list is size of MAX_CAPACITY
+    for i in range(globals.IMG_CAPICITY + 1):
+        globals.indexInJson.append(False)
+    
+    print(len(globals.indexInJson))
+    with open(file_name, "r") as file:
+        strData = file.read()
+        
+        jsonData: list = json.loads(strData)
+        
+        # Marks as present
+        for entries in jsonData:
+            print(realIndex(entries))
+            globals.indexInJson[realIndex(entries)] = True
+
+"""Pings Google to check whether the user has internet connection"""
+def connectionExists():
+    timeout = 1
+    
+    try:
+        requests.head("http://www.google.com/", timeout=timeout)
+        
+        return True
+    except requests.ConnectionError:
+        
+        return False
 
 def getStorageData(file, illegalIndexes = []):
-    globals.sentIndexes.clear()
     allData = {"file": [], "views": [], "subs": []}
-    text = None
+    jsonText = None
+    
     
     with open(file, "r") as data:
         text = data.read()
-        
-        with open("test_pre.txt", "w") as test:
-            test.write(text)
             
-        splitText = text.split("\n")
+        jsonText = json.loads(text)
+        unmoddedText: list = list(jsonText)
         i = 0
         # Removes all the elements which are currently being used by the fethcing thread
         if illegalIndexes:
             for indexes in illegalIndexes:
                 
-                splitText = [split for split in splitText if indexes != realIndex(split)]
+                
+                jsonText = [data for data in jsonText if indexes != realIndex(data)]
         
         wrapAround = False
         
         while (i < 20):
-            if not splitText:
+            if not jsonText:
                 break
-            randomElement = random.choice(splitText)
-            globals.sentIndexes.append(randomElement)
-            # if (rIndex >= illegalIndex and rIndex <= illegalIndex):
-            #     if wrapAround:
-            #         break
-                    
-            #     wrapAround = True
-            #     index = (illegalIndex + 20) % 120
-            #     rIndex = realIndex(text, index)
-            #     continue
-            # try:
-            #     newData = splitText[index]
-            # except IndexError:
-            #     index += 1
-            #     rIndex = realIndex(text, index)
-            #     if (rIndex > 120):
-            #         index = 0
-            #         rIndex = realIndex(data, index)
-            #     continue
-                
-            splitData = randomElement.split(":")
+
+            # Choose a random video from JSON data
+            sentItem = random.choice(jsonText)
+            itemIndex = realIndex(sentItem)
+            if (itemIndex in globals.sentIndexes): continue
             
-            # Removes spacing before it is sent
-            splitData[1] = splitData[1].replace(" ", "")
-            splitData[3] = splitData[3].replace(" ", "")
-            # Formatted as File: Views in txt file
-            allData["file"].append(splitData[0])
-            allData["views"].append(splitData[1])
-            allData["subs"].append(splitData[3])
-            # Removes what we used
-            text = text.replace(randomElement + "\n", "")
-            splitText.remove(randomElement)
+            globals.sentIndexes.append(itemIndex)
+            # It is now going to be taken away from JSON data
+            globals.indexInJson[itemIndex] = False
             
+            # Format of the json file: file_name, views, subscribers
+            allData["file"].append(sentItem["file_name"])
+            # They have to sent as strings through zmq
+            allData["views"].append(str(sentItem["views"]))
+            allData["subs"].append(str(sentItem["subscribers"]))
+            
+            # We need to delete our sent entry from both
+            unmodIndex = unmoddedText.index(sentItem)
+            jsonIndex = jsonText.index(sentItem)
+            unmoddedText.pop(unmodIndex)
+            jsonText.pop(jsonIndex)
             i += 1
-            # index += 1
-            # if (index > 100):
-            #     index = 0
-            # rIndex = realIndex(text, index)
-        
+    
+    
+    jsonVer = json.dumps(unmoddedText, indent=4)
    
     with open(file, "w") as data:
-        data.write(text)
+        data.write(jsonVer)
+        
     return allData

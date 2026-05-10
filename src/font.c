@@ -54,10 +54,14 @@ void displayTextAsSurface(ProjectedObject obj, TTF_Text* txt) {
 
 	SDL_Color txtColor;
 
-	int w, h;
+	int tempW, tempH;
 
-	TTF_GetTextSize(txt, &w, &h);
+	TTF_GetTextSize(txt, &tempW, &tempH);
 	float sizeRatio = obj.projectedRect.w / obj.realRect.w;
+
+	// After getting text size, convert to float
+	float w = tempW;
+	float h = tempH;
 
 	w *= sizeRatio;
 	h *= sizeRatio;
@@ -65,7 +69,7 @@ void displayTextAsSurface(ProjectedObject obj, TTF_Text* txt) {
 
 	TTF_GetTextColor(txt, &(txtColor.r), &(txtColor.g), &(txtColor.b), &(txtColor.a));
 	SDL_Texture* txtTexture = NULL;
-	SDL_Surface* txtSurface = TTF_RenderText_Solid(smallFont, txt->text, strlen(txt->text), txtColor);
+	SDL_Surface* txtSurface = TTF_RenderText_Solid(TTF_GetTextFont(txt), txt->text, strlen(txt->text), txtColor);
 
 	if (txtSurface == NULL) {
 		fprintf(stderr, "%s\n", "Surface for Txt Failed");
@@ -82,7 +86,8 @@ void displayTextAsSurface(ProjectedObject obj, TTF_Text* txt) {
 		exit(1);
 	}
 
-	SDL_FRect realRect = createRect(obj.projectedRect.x + (obj.projectedRect.w / 2), obj.projectedRect.y + (obj.projectedRect.h / 2), w,
+
+	SDL_FRect realRect = createRect(obj.projectedRect.x + (obj.projectedRect.w / 2) , obj.projectedRect.y + (obj.projectedRect.h / 2), w,
 		h, true);
 
 	SDL_RenderTexture(renderer, txtTexture, NULL, &realRect);
@@ -108,9 +113,95 @@ void createFontArray() {
 	fontArray->fontSize = 8;
 }
 
+/*Given a TTF_Text, return an array which has wrapping which can
+fit within the width of containerW*/
+TTF_Text** wrapText(TTF_Text* msg, float containerW, int* count) {
+
+	if (count == NULL) return NULL;
+	*count = 0;
+
+	TTF_Font* font = TTF_GetTextFont(msg);
+
+	// Our basis for the wrap
+	TTF_Text* refTxt = TTF_CreateText(textEngine, font, "a", strlen("a"));
+	int letterSize = 0;
+	TTF_GetTextSize(refTxt, &letterSize, NULL);
+
+
+	TTF_DestroyText(refTxt);
+
+	char* strMsg = msg->text;
+
+	int splitCount = 0;
+	// We shouldn't start a new line halfway through an old one
+	char** splitMsg = split(strMsg, ' ', &splitCount);
+
+	TTF_Text** textLines = malloc(sizeof(TTF_Text*) * splitCount);
+
+	if (textLines == NULL) {
+		errorExit("Memory alloc for the text lines failed");
+	}
+
+	float currentSize = 0.0f;
+	int lastIndex = 0;
+
+	for (int a = 0; a < splitCount; a++) {
+		// If there is nothing, we will unconditionally add the line
+		if (currentSize == 0.0f) {
+			currentSize = strlen(splitMsg[a]) * letterSize;
+		// Does the new word fit?
+		}
+		else if (currentSize + ((strlen(splitMsg[a]) * letterSize)) < containerW) {
+			currentSize += strlen(splitMsg[a]) * letterSize;
+		}
+		else {
+			int newLen = 0;
+			char* msgPart = join(splitMsg, lastIndex, a - 1, " ", &newLen);
+			
+			printf("Passed font size: %f\n", TTF_GetFontSize(font));
+			textLines[(*count)] = TTF_CreateText(textEngine, font, msgPart, strlen(msgPart));
+			(*count)++;
+			
+			
+			free(msgPart);
+			lastIndex = a;
+
+			// New line will start with our current word
+			currentSize = strlen(splitMsg[a]) * letterSize;
+
+		}
+	}
+
+	// Adds in the last part, if it exists
+	if (currentSize != 0.0f) {
+		int newLen = 0;
+		char* msgPart = join(splitMsg, lastIndex, splitCount - 1, " ", &newLen);
+		
+		textLines[(*count)] = TTF_CreateText(textEngine, font, msgPart, strlen(msgPart));
+		(*count)++;
+		
+		free(msgPart);
+	}
+	
+	TTF_Text** tempTxt = realloc(textLines, sizeof(TTF_Text*) * (*count));
+	if (tempTxt == NULL) {
+		errorExit("Memory realloc for the text lines failed");
+	}
+
+	textLines = tempTxt;
+
+	// Free the split message
+	for (int a = 0; a < splitCount; a++) {
+		free(splitMsg[a]);
+	}
+
+	free(splitMsg);
+	return textLines;
+}
+
 void freeFontArray() {
 	for (int a = 0; a < fontArray->fontIndex; a++) {
-		free(fontArray->fonts[a]);
+		TTF_CloseFont(fontArray->fonts[a]);
 	}
 
 	free(fontArray);
@@ -265,9 +356,30 @@ void zoomOutTxt(TTF_Font* oldFont, float oldX, float newX) {
 	printf("%f\n", TTF_GetFontSize(oldFont));
 }
 
+/*Copy font function. Practially, the only
+diff betweeen this and the built in one is that
+this adds to fontArray for freeing later.*/
+TTF_Font* copyFont(TTF_Font* oldFont) {
+	TTF_Font* newFont = TTF_CopyFont(oldFont);
+	if (newFont == NULL) {
+		fprintf(stderr, "%s\n", "Error with copying the font");
+		quit(ytQueue);
+		exit(-1);
+	}
+	fontArray->fonts[fontArray->fontIndex] = newFont;
+	(fontArray->fontIndex)++;
+
+	if (fontArray->fontIndex >= fontArray->fontSize) {
+		expandFontArray();
+	}
+
+	return newFont;
+}
+
 TTF_Font* createFont(char* file_name, float size) {
+	//printf("File Name: %s\n", file_name);
 	TTF_Font* font;
-	font = TTF_OpenFont(file_name, 100);
+	font = TTF_OpenFont(file_name, 500);
 	if (font == NULL) {
 		fprintf(stderr, "%s\n", "Error with oppening the font");
 		quit(ytQueue);
@@ -281,7 +393,21 @@ TTF_Font* createFont(char* file_name, float size) {
 	}
 
 	fontArray->fonts[fontArray->fontIndex] = font;
-	(fontArray->fontSize)++;
+	(fontArray->fontIndex)++;
+
+	if (fontArray->fontIndex >= fontArray->fontSize) {
+		expandFontArray();
+	}
 
 	return font;
+}
+
+void expandFontArray() {
+	TTF_Font** temp = realloc(fontArray->fonts, sizeof(TTF_Font*) * (fontArray->fontSize * 2));
+	if (temp == NULL) {
+		errorExit("Reallocation for font array failed");
+	}
+
+	fontArray->fonts = temp;
+	fontArray->fontSize *= 2;
 }

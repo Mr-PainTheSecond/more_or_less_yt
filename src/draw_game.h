@@ -7,7 +7,7 @@
 #include "utilities.h"
 #include "config.h"
 
-int drawMoreOrLess(TTF_Text* moreTxt, TTF_Text* lessTxt, Queue* queue);
+int drawMoreOrLess(TTF_Text* moreTxt, TTF_Text* lessTxt, Queue* queue, int* counter);
 
 
 #endif // !
