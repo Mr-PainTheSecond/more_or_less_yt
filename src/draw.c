@@ -110,7 +110,7 @@ void drawFinalScreen() {
 	displayText(menuRect, menuTxt, &x, &y);
 }
 
-int draw(TTF_Text* more, TTF_Text* less, Queue* queue) {
+int draw(TTF_Text* more, TTF_Text* less, Queue* queue, int* counter) {
 	// Clears the renderer
 	static bool firstIter = true;
 	SDL_SetRenderDrawColor(renderer, 128, 0, 32, SDL_ALPHA_OPAQUE);
@@ -126,7 +126,7 @@ int draw(TTF_Text* more, TTF_Text* less, Queue* queue) {
 
 	// There is a LOT of states within the regular game logic
 	if (gameAttr->state >= normal && gameAttr->state <= justWon || gameAttr->state == shutDown) {
-		gameAttr->state = drawMoreOrLess(more, less, queue);
+		gameAttr->state = drawMoreOrLess(more, less, queue, counter);
 	}
 	if (gameAttr->state >= justLost && gameAttr->state <= gameWon || gameAttr->state == shutDown) {
 		drawFinalScreen();

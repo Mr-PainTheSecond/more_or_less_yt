@@ -540,7 +540,7 @@ int main() {
 			}
 		}
 		
-		gameAttr->state = draw(moreText, lessText, ytQueue);
+		gameAttr->state = draw(moreText, lessText, ytQueue, &counter);
 
 		clock_t finishTime = clock();
 		// Enforce the FPS

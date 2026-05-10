@@ -7,10 +7,11 @@
 
 void deleteQueue(Queue* queue);
 
+void deleteNode(YTNode* node);
+
 void deQueue(Queue* queue, YTNode* next);
 
 u_int64 convertToInt(char* sInt);
-
 
 /*Takes a string representation of a float,
 returns its float representation

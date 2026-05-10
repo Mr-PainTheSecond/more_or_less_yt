@@ -577,12 +577,17 @@ float center(float pos, float size) {
 	return pos - (size / 2);
 }
 
+void deleteNode(YTNode* node) {
+	SDL_DestroyTexture(node->img);
+	free(node->filePath);
+	free(node->sViews);
+	free(node->subs);
+	free(node);
+}
+
 void deQueue(Queue* queue, YTNode* next) {
 	YTNode* oldFront = queue->front;
-	SDL_DestroyTexture(oldFront->img);
-	free(oldFront->filePath);
-	free(oldFront->sViews);
-	free(oldFront);
+	deleteNode(oldFront);
 	queue->front = next;
 	if (queue->front == NULL || queue->front->next == NULL) {
 		zstr_send(requester, "STOP");
