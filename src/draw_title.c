@@ -236,7 +236,7 @@ int drawTitle(int state) {
 		float rectW = w / 4;
 		float rectH = rectW * 9 / 16;
 
-		w = handleXPos(xPos[0], xPos[1], screenWrap, w, &h, rectW);
+		w = handleXPos(xPos[0], xPos[1], screenWrap, w, &h, rectW, rectW);
 
 		// These are thumbnails/video floating around
 		for (int a = 0; a < VIDEO_COUNT; a++) {
@@ -361,6 +361,8 @@ int drawTitle(int state) {
 			}
 		}
 
+		unprojectXPOS(xPos[0], xPos[1]);
+
 		isDiff = false;
 		screenWrap = firstStopDistanceX;
 
@@ -464,7 +466,8 @@ int drawTitle(int state) {
 		/*zoomOutTxt(changingSmallFont, logoRect.realRect.x, logoRect.projectedRect.x + xDifference);*/
 
 
-		screenWrap += xDifference;
+		screenWrap -= xDifference;
+		printf("%f\n", screenWrap);
 		count++;
 	}
 	else {
@@ -480,13 +483,16 @@ int drawTitle(int state) {
 		count = 0;
 	}
 
-
+	static float realW = 0;
+	static float realH = 0;
 	static float rectW = 0;
 	static float rectH = 0;
 
 	if (rectW == 0) {
 		rectW = w / 4;
 		rectH = rectW * 9 / 16;
+		realW = rectW;
+		realH = rectH;
 	}
 	else {
 		rectW = rectArray[0].projectedRect.w;
@@ -494,7 +500,7 @@ int drawTitle(int state) {
 		/*printf("%f %f %f\n", logoRect.realRect.w / logoRect.projectedRect.w, logoRect.projectedRect.x - logoRect.realRect.x, logoRect.projectedRect.y - logoRect.realRect.y);*/
 	}
 
-	w = handleXPos(xPos[0], xPos[1], screenWrap, w, &h, rectW);
+	w = handleXPos(xPos[0], xPos[1], screenWrap, w, &h, rectW, realW);
 
 	int haltCond;
 	// If transition, difficulty assets are also affected, if not only videos matter

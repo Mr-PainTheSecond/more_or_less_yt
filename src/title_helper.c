@@ -3,7 +3,7 @@
 /*Handles everything for the xPos array, which keeps track of the positions
 of the thumbnails which are all offset every frame. Will also change the width and
 height if the screen size ever changes.*/
-float handleXPos(float* realPOS, float* projectedPOS, float wrapPoint, float w, float* h, float rectW) {
+float handleXPos(float* realPOS, float* projectedPOS, float wrapPoint, float w, float* h, float rectW, float realW) {
 
 	// The screen has changed, we need to fix the positions
 	if (w != screen->w) {
@@ -44,12 +44,19 @@ float handleXPos(float* realPOS, float* projectedPOS, float wrapPoint, float w, 
 			realPOS[a] -= 4;
 			if (projectedPOS[a] + rectW < -wrapPoint) {
 				// This is the right most position the rect can be
-				realPOS[a] = -(rectW * 2) + (rectW * 2 * (VIDEO_COUNT / LEVEL_COUNT - 1));
+				realPOS[a] = -(realW * 2) + (realW * 2 * (VIDEO_COUNT / LEVEL_COUNT - 1));
+				projectedPOS[a] = -(rectW * 2) + (rectW * 2 * (VIDEO_COUNT / LEVEL_COUNT - 1));
 			}
 		}
 	}
 
 	return w;
+}
+
+void unprojectXPOS(float* realPOS, float* projectedPOS) {
+	for (int a = 0; a < VIDEO_COUNT; a++) {
+		projectedPOS[a] = realPOS[a];
+	}
 }
 
 ProjectedObject projectRect(ProjectedObject obj, float xDifference, float yDifference) {
