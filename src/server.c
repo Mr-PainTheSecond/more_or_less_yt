@@ -40,7 +40,7 @@ zsock_t* establishConnection() {
 
 /*With the data grabbed from the backend/offline, will add every datapoint which partains to each
 video. This includes: View Count (int and char*), file name, and sub counts */
-void storeYTData(Queue* queue, char* sData, int data, char* file_name, char* subCount) {
+void storeYTData(Queue* queue, char* sData, u_int64 data, char* file_name, char* subCount) {
 	YTNode* dataNode = malloc(sizeof(YTNode));
 	if (dataNode == NULL) {
 		quit(queue);
@@ -56,8 +56,7 @@ void storeYTData(Queue* queue, char* sData, int data, char* file_name, char* sub
 		queue->back = dataNode;
 	}
 
-	queue->size++;
-	dataNode->views = data;
+	dataNode->views = (float)data;
 	dataNode->filePath = malloc(sizeof(char) * strlen(file_name) + 1);
 	if (dataNode->filePath == NULL) {
 		quit(queue);
@@ -93,6 +92,8 @@ void storeYTData(Queue* queue, char* sData, int data, char* file_name, char* sub
 
 	dataNode->img = SDL_CreateTextureFromSurface(renderer, surf);
 	SDL_DestroySurface(surf);
+
+	queue->size++;
 	//printf("%s\n", dataNode->filePath);
 	//printf("%s\n", dataNode->sViews);
 	dataNode->next = NULL;
@@ -161,7 +162,7 @@ void storeYTDataOffline(Queue* queue, char* filePath, int count) {
 			free(dataPoint[a]);
 		}
 
-		int views = convertToInt(sViews);
+		u_int64 views = convertToInt(sViews);
 
 		/*printf("Subs: %s\n", subs);
 		printf("Views: %s\n", sViews);

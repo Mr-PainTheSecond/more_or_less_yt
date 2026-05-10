@@ -84,8 +84,16 @@ class Messages:
         self.socket.send_string("-1")
     
     def sendNetworkError(self):
-        self.socket.recv()
-        self.socket.send_string("LOST")
+        try:
+            theResponse = str(self.socket.recv())
+            self.socket.send_string("LOST")
+            if theResponse == "b\'STOP\'":
+                print("[red]Connection terminated")
+                sys.exit(0)
+        # If we get this error, frotend doesn't need videos so doesn't matter
+        except zmq.error.Again:
+            print("[red]stalling..")
+            return
     # def talkToClient(self, *args):
     #     files = list(args)
     #     while files:

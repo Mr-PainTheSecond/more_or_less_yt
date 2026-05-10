@@ -30,6 +30,7 @@ int drawTitle(int state) {
 	SDL_Color wineColor = { 100, 27, 0, SDL_ALPHA_OPAQUE };
 	SDL_Color greenColor = { 0, 102, 27, SDL_ALPHA_OPAQUE };
 	SDL_Color orangeColor = { 238, 63, 0, SDL_ALPHA_OPAQUE };
+	SDL_Color blueColor = { 8, 39, 245, SDL_ALPHA_OPAQUE };
 	SDL_Color goldColor = { 255, 233, 0, SDL_ALPHA_OPAQUE };
 	SDL_Color whiteColor = { 255, 255, 255, SDL_ALPHA_OPAQUE };
 
@@ -275,9 +276,9 @@ int drawTitle(int state) {
 		//printf("%f %f\n", expX, expY);
 		explanationRect = createProjectedObject(expX, expY, (w / 4) * firstStopRatio, h * 3 / 4 * firstStopRatio, true);
 
-		float beginX = explanationRect.realRect.x +  ((w / 8  + (width / 4)) / firstStopRatio);
+		float beginX = explanationRect.realRect.x +  ((w / 8) / firstStopRatio);
 		float beginY = explanationRect.realRect.y + (explanationRect.realRect.h) + (h / 16);
-		beginGameLogo = createProjectedObject(beginX, beginY, width / 2, height / 2, false);
+		beginGameLogo = createProjectedObject(beginX, beginY, width, height, false);
 
 		char*** jsonData = readJSONArray("..\\assets\\data\\description.json", "descriptions", &objs, &items);
 
@@ -630,7 +631,7 @@ int drawTitle(int state) {
 	
 	// Can only start once difficulty selected
 	if (difficulty != -1)  {
-		drawSmoothRectagle(beginGameLogo.projectedRect, wineColor.r, wineColor.g, wineColor.b, wineColor.a, beginGameLogo.projectedRect.w / 6);
+		drawSmoothRectagle(beginGameLogo.projectedRect, blueColor.r, blueColor.g, blueColor.b, blueColor.a, beginGameLogo.projectedRect.w / 6);
 		displayTextAsSurface(beginGameLogo, playTxt);
 		displayTextAsSurface(difficultyName, difficultyNameTxt[difficulty]);
 	}

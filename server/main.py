@@ -151,17 +151,28 @@ class YouTubeData():
         
         category = random.choice(globals.typeList)
         result = None
-        if globals.args != "view_test":
+        # Forces videos from Jacksepticeye so we can check if views are good
+        if globals.args == "view_test":
+            self.cursor.execute("SELECT * FROM youtube where CHANNEL = \'jacksepticeye\'")
+        
+        else:
             if category == "gaming":
                 self.cursor.execute("SELECT * FROM youtube WHERE category_id = 20")
             elif category == "beauty":
                 self.cursor.execute("SELECT * FROM youtube WHERE category_id = 26")
             elif category == "music":
                 self.cursor.execute("SELECT * FROM youtube WHERE category_id = 10")
+            elif category == "pets":
+                self.cursor.execute("SELECT * FROM youtube WHERE category_id = 15")
+            elif category == "sports":
+                self.cursor.execute("SELECT * FROM youtube WHERE category_id = 17")
+            elif category == "politics":
+                self.cursor.execute("SELECT * FROM youtube WHERE category_id = 25")
+            elif category == "science":
+                self.cursor.execute("SELECT * FROM youtube WHERE category_id = 28")
             elif category == "random":
                 self.cursor.execute("SELECT * FROM youtube")
-        else:
-            self.cursor.execute("SELECT * FROM youtube where CHANNEL = \'jacksepticeye\'")
+        
 
         
         result = self.cursor.fetchall()
@@ -287,18 +298,23 @@ if __name__ == "__main__":
         pass
     if globals.args != "fill":
         
-        if not utilities.connectionExists():
-            sys.exit(0)
+         
         
-        messageManager.findConnection(firstLock)  
+        if not utilities.connectionExists():
+            messageManager.sendNetworkError()
+        # We can start sending data if internet connection
+        else:
+            messageManager.findConnection(firstLock)  
     
     repetitions = 0
     while globals.serverRunning:
         dataManager = YouTubeData(firstIndex)
         
-        # Data Collection takes time!!
+       
         if not utilities.connectionExists():
-            sys.exit(0)
+            messageManager.sendNetworkError()
+            continue
+         # Data Collection takes time!!
         serverBuffer = threading.Thread(None, messageManager.findConnection, args = ([], True,  ))
         dataCollector = threading.Thread(None, dataManager.getData)
         

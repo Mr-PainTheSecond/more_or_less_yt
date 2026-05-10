@@ -9,7 +9,7 @@ void deleteQueue(Queue* queue);
 
 void deQueue(Queue* queue, YTNode* next);
 
-int convertToInt(char* sInt);
+u_int64 convertToInt(char* sInt);
 
 
 /*Takes a string representation of a float,

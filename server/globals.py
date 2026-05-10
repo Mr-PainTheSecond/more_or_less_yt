@@ -6,4 +6,4 @@ indexInJson = []
 
 IMG_CAPICITY = 300  
 args = None
-typeList = ["random", "beauty", "gaming", "music"]
+typeList = ["random", "beauty", "gaming", "music", "pets", "sports", "politics", "science"]

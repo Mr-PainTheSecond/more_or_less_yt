@@ -9,9 +9,11 @@
 
 int moreOrLess(bool more, Queue* queue, int score, int* state) {
 
-	int viewPublic = queue->front->views;
+	u_int64 viewPublic = queue->front->views;
 	YTNode* nextNode = queue->front->next;
-	int privateViews = nextNode->views;
+	u_int64 privateViews = nextNode->views;
+
+	printf("Shown Views: %llu Hidden Views: %llu\n", viewPublic, privateViews);
 	//deQueue(queue, nextNode);
 	if (more) {
 		if (privateViews >= viewPublic) {

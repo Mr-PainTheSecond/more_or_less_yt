@@ -2,12 +2,12 @@
 
 /*Takes a string representation of an integer,
 returns its integer represenation*/
-int convertToInt(char* sInt) {
+u_int64 convertToInt(char* sInt) {
 	int sIntSize = strlen(sInt);
-	int finalInt = 0;
+	u_int64 finalInt = 0;
 	for (int a = 0; a < sIntSize; a++) {
 		int digit = (int)(sInt[a]) - 48;
-		int addedDigit = pow(10, sIntSize - a - 1) * digit;
+		u_int64 addedDigit = pow(10, sIntSize - a - 1) * digit;
 		finalInt += addedDigit;
 	}
 

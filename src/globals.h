@@ -22,7 +22,7 @@ typedef struct fonts {
 
 typedef struct ytNode {
 	struct ytNnode* next;
-	int views;
+	float views;
 	char* filePath;
 	char* sViews;
 	char* subs;
