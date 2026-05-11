@@ -1,7 +1,7 @@
 #ifndef CONFIG_H_
 #define CONFIG_H_
 #include "commons.h"
-#include "globals.h"
+
 
 
 #define FULLSCREEN 1
@@ -84,6 +84,11 @@
 // This helps keep the zoom effect the same (like 3.02 rn) across different screen sizes
 #define THIS_IS_A_CERTIFIED_CLASSIC 3827.39f
 
+// Unlocks occur after beating easist difficulty
+#define FIRST_UNLOCK 1
+
+// Unlocks occur after beating first timer difficulty
+#define SECOND_UNLOCK 3
 
 #endif // !CONFIG_H_
 

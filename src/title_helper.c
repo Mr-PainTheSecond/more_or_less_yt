@@ -88,6 +88,7 @@ ProjectedObject unprojectObject(ProjectedObject obj) {
 	return obj;
 }
 
+
 void createExplanationTxt(MultiLineText* explanationTxt, TTF_Font* font, char*** jsonData, int entries, SDL_FRect ref) {
 
 	// Where the line count is placed in the JSON file
@@ -112,8 +113,10 @@ void createExplanationTxt(MultiLineText* explanationTxt, TTF_Font* font, char***
 		// Need for font size
 		char* allText = join(jsonData[a], 3, 3 + jsonLines - 1, " ", &textWidth);
 		int charCount = strlen(allText);
+		int noAllConds = convertToInt(jsonData[a][lineCountIndex + 1 + jsonLines]);
+		printf("All conds message: %d\n", noAllConds);
 		// Every difficulty past one will say "All previous conditions apply"
-		if (a != 0 && a != DIFFICULTY_COUNT) {
+		if (noAllConds == 0) {
 			explanationTxt[a].lineCount++;
 			charCount += strlen(" All previous conditions apply");
 		}
@@ -192,7 +195,7 @@ void createExplanationTxt(MultiLineText* explanationTxt, TTF_Font* font, char***
 		}
 
 		// All condition apply msg, except for initial and easiest difficulty
-		if (a != 0 && a != DIFFICULTY_COUNT) {
+		if (noAllConds == 0) {
 			float coolerY = ref.y + (ref.h / majorLineCount) * jsonLines;
 
 			char condMsg[] = "All previous conditions apply";

@@ -300,6 +300,39 @@ char*** readJSONArray(const char* fileName, const char* array, int* objCount, in
 	return data;
 }
 
+/*Creates a new JSON file or overwrites one contains a
+JSON array nammed after array. Only takes in strings.
+Covert to string first if writing ints, floats, etc.*/
+void writeJSONArray(const char* fileName, const char* array, char** entryNames, char*** data, int objCount, int* entries) {
+	FILE* jsonFile = fopen(fileName, "w");
+	if (jsonFile == NULL) {
+		fprintf(stderr, "%s\n", "Something has gone wrong with the JSON file/doesn't exist");
+		quit(ytQueue);
+		exit(1);
+	}
+	fprintf(jsonFile, "{\n\t\"%s\": [\n", array);
+
+
+	// Goes through each obj in arrray
+	for (int a = 0; a < objCount; a++) {
+		fprintf(jsonFile, "\t\t{\n");
+		for (int b = 0; b < entries[a]; b++) {
+			fprintf(jsonFile, "\t\t\t\"%s\": \"%s\"", entryNames[b], data[a][b]);
+			if (b != entries[a] - 1) {
+				fprintf(jsonFile, ",");
+			}
+			fprintf(jsonFile, "\n");
+		}
+		fprintf(jsonFile, "\t\t}");
+		if (a != objCount - 1) {
+			fprintf(jsonFile, ",");
+		}
+		fprintf(jsonFile, "\n");
+	}
+	fprintf(jsonFile, "\t]\n}");
+	fclose(jsonFile);
+}	
+
 /*Frees an Array read from I/O after it has been used up*/
 void freeJSONArray(char*** data, int objCount, int* entries) {
 	for (int a = 0; a < objCount; a++) {
@@ -679,4 +712,14 @@ void quit(Queue* queue) {
 	}
 
 	zsock_destroy(&requester);
+}
+
+bool difficultyUnlocked(int difficultyIndex) {
+	// This difficulty is beaten or hardest accessible
+	if (saveData[stars] >= difficultyIndex) return true;
+	// Timer was beaten, so every difficulty is unlocked
+	if (saveData[stars] >= SECOND_UNLOCK) return true;
+	// Standard was beaten, not timer
+	if (saveData[stars] >= FIRST_UNLOCK && difficultyIndex < SECOND_UNLOCK) return true;
+	return false;
 }

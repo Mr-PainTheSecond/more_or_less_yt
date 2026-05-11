@@ -7,6 +7,55 @@
 #include "globals.h"
 
 
+/*Taking the save data from the JSON file, writes into a global int array
+and frees the JSON version*/
+void readSaveData(char*** saveJSON, int objCount, int* entries) {
+	// Obj count will be one unless I add profiles later
+	for (int a = 0; a < objCount; a++) {
+
+		saveData = malloc(sizeof(int) * entries[a]);
+
+		if (saveData == NULL) {
+			errorExit("Malloc for save data failed");
+		}
+
+		for (int b = 0; b < entries[a]; b++) {
+			int savePoint = convertToInt(saveJSON[a][b]);
+
+			printf("Save Point %d: %d\n", b, savePoint);
+			saveData[b] = savePoint;
+		}
+	}
+
+	// Don't need JSON version anymore
+	savePoints = entries[0];
+	freeJSONArray(saveJSON, objCount, entries);
+}
+
+void writeSaveData(const char* fileName, const char* array) {
+	// May add more in future
+	char* entryNames[] = { "stars", "max_score" };
+
+	char*** data = malloc(sizeof(char**) * 1);
+	int* entries = malloc(sizeof(int) * 1);
+	if (data == NULL || entries == NULL) {
+		errorExit("Malloc for writing save data failed");
+	}
+
+	data[0] = malloc(sizeof(char*) * savePoints);
+	if (data[0] == NULL) {
+		errorExit("Malloc for writing save data failed");
+	}
+
+	// All save data will be written as strings
+	for (int a = 0; a < savePoints; a++) {
+		data[0][a] = converToStr(saveData[a]);
+	}
+	entries[0] = savePoints;
+	writeJSONArray(fileName, array, entryNames, data, 1, entries);
+	freeJSONArray(data, 1, entries);
+}
+
 int moreOrLess(bool more, Queue* queue, int score, int* state) {
 
 	u_int64 viewPublic = queue->front->views;
@@ -25,6 +74,12 @@ int moreOrLess(bool more, Queue* queue, int score, int* state) {
 			// buddy won!!!
 			if (score + 1 >= WINNING_SCORE) {
 				gameAttr->state = justWon;
+				// Hardest diff in this save was just beaten, add it and document it
+				if (difficulty == saveData[stars]) {
+					saveData[stars]++;
+					saveData[highScore] = 0;
+					writeSaveData("..\\assets\\data\\save.json", "save_data");
+				}
 			}
 			else {
 				gameAttr->state = moreRight;
@@ -50,6 +105,11 @@ int moreOrLess(bool more, Queue* queue, int score, int* state) {
 
 			if (gameAttr->health <= 0) {
 				gameAttr->state = justLost;
+				// Didn't win, but beat the score on their hardest diff, document it
+				if (difficulty == saveData[stars] && saveData[highScore] < score) {
+					saveData[highScore] = score;
+					writeSaveData("..\\assets\\data\\save.json", "save_data");
+				}
 			}
 
 			// Can't have negative score.
@@ -80,6 +140,12 @@ int moreOrLess(bool more, Queue* queue, int score, int* state) {
 
 			if (score + 1 >= WINNING_SCORE) {
 				gameAttr->state = justWon;
+				// Hardest diff in this save was just beaten, add it and document it
+				if (difficulty == saveData[stars]) {
+					saveData[stars]++;
+					saveData[highScore] = 0;
+					writeSaveData("..\\assets\\data\\save.json", "save_data");
+				}
 			}
 			else {
 				gameAttr->state = lessRight;
@@ -336,6 +402,7 @@ void handleMouseClick(SDL_MouseButtonEvent button, bool* aboutToQuit, int* timeC
 	}
 }
 
+
 int main() {
 	// Should be off for normal behavior
 	if (DEBUG) {
@@ -387,7 +454,11 @@ int main() {
 		return -1;
 	}
 
+	int objs;
+	int* entries;
 
+	char*** saveJSON = readJSONArray("..\\assets\\data\\save.json", "save_data", &objs, &entries);
+	readSaveData(saveJSON, objs, entries);
 
 	clock_t timeClocked = clock();
 	clock_t cooldown = clock();
@@ -412,7 +483,12 @@ int main() {
 
 		while (SDL_PollEvent(&event)) {
 			if (event.type == SDL_EVENT_QUIT) {
-				gameRunning = false;
+				gameAttr->state = shutDown;
+				aboutToQuit = true;
+				if (difficulty == saveData[stars] && saveData[highScore] < gameAttr->score) {
+					saveData[highScore] = gameAttr->score;
+					writeSaveData("..\\assets\\data\\save.json", "save_data");
+				}
 				break;
 			}
 			// Key is the code of the key press within the key struct
@@ -424,6 +500,10 @@ int main() {
 					// States where the game is business as usual
 					if (gameAttr->state >= normal && gameAttr->state <= gameWon) {
 						gameAttr->state = justQuit;
+						if (difficulty == saveData[stars] && saveData[highScore] < gameAttr->score) {
+							saveData[highScore] = gameAttr->score;
+							writeSaveData("..\\assets\\data\\save.json", "save_data");
+						}
 					}
 					else if (gameAttr->state == title || gameAttr->state == titleDiff) {
 						gameAttr->state = shutDown;

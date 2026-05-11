@@ -45,9 +45,13 @@ float normalize(float x1, float y1, float x2, float y2);
 
 char*** readJSONArray(const char* fileName, const char* array, int* objCount, int** entries);
 
+void writeJSONArray(const char* fileName, const char* array, char** entryNames, char*** data, int objCount, int* entries);
+
 __declspec(noreturn) void errorExit(const char* msg);
 
 void freeJSONArray(char*** data, int objCount, int* entries);
+
+bool difficultyUnlocked(int difficultyIndex);
 
 void quit(Queue* queue);
 

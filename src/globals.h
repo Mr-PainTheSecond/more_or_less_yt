@@ -2,6 +2,7 @@
 #ifndef GLOBALS_H_
 #define GLOBALS_H_
 #include "commons.h"
+#include "config.h"
 // FPS is about 3ms
 #define FPS_TIME 3
 
@@ -73,6 +74,7 @@ enum states {title, titleAni, titleDiff, titleToNormal, normal,
 enum toggles {enableW = 1, enableS, disableEsc, enableEsc, disableS, disableW};
 enum isOn {WOn = 1, SOn, escOn = 4};
 enum difficulties {standard, noSubs, timer, pointDeduct, lessHeart, noMil, harshTimer};
+enum saveInfo {stars, highScore};
 
 SDL_Color ytRed;
 Fonts* fontArray;
@@ -87,6 +89,8 @@ TTF_Font* ytFont;
 SDL_FRect diffToTitle;
 SDL_FRect diffToPlay;
 ProjectedObject* diffSelect;
+int* saveData;
+int savePoints;
 int difficulty;
 TTF_TextEngine* textEngine;
 Queue* ytQueue;
