@@ -540,6 +540,21 @@ char** split(const char* str, char delimeter, int* size) {
 	return words;
 }
 
+/*Does a string concatination where
+A) The size is guaranteed to be enough
+B) It creates a new copy as oppose to overiding original*/
+char* properConcat(const char* str1, const char* str2) {
+	char* newStr = malloc(sizeof(char) * (strlen(str1) + strlen(str2) + 1));
+	if (newStr == NULL) {
+		fprintf(stderr, "%s\n", "Allocation of new string failed");
+		quit(ytQueue);
+		exit(1);
+	}
+	strcpy(newStr, str1);
+	strcat(newStr, str2);
+	return newStr;
+}	
+
 /*Given an array of string, joins them to become one string which are each seperated
 by the string specified in newChar*/
 char* join(char** arr, int lower, int upper, const char* newChar, int* newLen) {
@@ -577,8 +592,11 @@ and if it is, it will ask the server for more data.*/
 int expandQueue(zsock_t* requester, Queue* queue, int counter) {
 	counter++;
 	if (queue->size <= 4) {
+		if (!connected) {
+			if (zstr_recv(requester) != NULL) connected = true;
+		}
 		// Let the server know we are ready for more
-		zstr_send(requester, "Roger");
+		if (connected) zstr_send(requester, "Roger");
 		if (!getYtData(requester, queue)) {
 			return -1;
 		}
@@ -706,7 +724,7 @@ void quit(Queue* queue) {
 	free(offlineVideos);
 
 	// We need to shutdown backup too.
-	if (strcmp(zstr_recv(requester), "ONE_MORE") == 0) {
+	if (!offline && strcmp(zstr_recv(requester), "ONE_MORE") == 0) {
 		zstr_send(requester, "STOP");
 		zstr_recv(requester);
 	}

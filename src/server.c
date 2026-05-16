@@ -4,20 +4,7 @@ zsock_t* establishConnection() {
 	zsock_t* requester = zsock_new(ZMQ_REQ);
 
 
-	int* timeOut = malloc(sizeof(int));
-
-	if (timeOut == NULL) {
-		fprintf(stderr, "%s\n", "No mem for timeOut");
-		SDL_DestroySurface(screen->surface);
-		free(screen);
-		freeFontArray();
-		SDL_DestroyWindow(window);
-		SDL_DestroyRenderer(renderer);
-		SDL_Quit();
-		exit(1);
-	}
-
-	zsock_set_rcvtimeo(requester, 2000);
+	zsock_set_rcvtimeo(requester, 5000);
 
 
 	if (zsock_connect(requester, "tcp://localhost:5555")) {
@@ -33,7 +20,7 @@ zsock_t* establishConnection() {
 
 
 	printf("Set time out\n");
-	zstr_send(requester, "Roger");
+	zstr_send(requester, "CONNECTION");
 	printf("Message sent\n");
 	return requester;
 }
@@ -188,14 +175,17 @@ bool getYtData(zsock_t* connection, Queue* queue) {
 	printf("Trying to get data\n");
 	char* data = zstr_recv(connection);
 	printf("Passed timeout\n");
-	printf("%p\n", data);
+	printf("%s\n", data);
 	if (data == NULL) {
+		offline = true;
 		storeYTDataOffline(queue, "..\\assets\\data\\offline_storage.txt", 20);
 		return true;
 	}
 
 	// Server is busy getting data, so we need to use offline data
 	if (strcmp(data, "NOT_READY") == 0) {
+		connected = true;
+		offline = true;
 		printf("%s\n", "System works?");
 		storeYTDataOffline(queue, "..\\assets\\data\\offline_storage.txt", 20);
 		return true;
@@ -203,10 +193,17 @@ bool getYtData(zsock_t* connection, Queue* queue) {
 
 	// Server is offline, so we need to use offline data
 	if (strcmp(data, "LOST") == 0) {
+		connected = true;
+		offline = true;
 		fprintf(stderr, "%s\n", "CONNECTION LOST");
 		storeYTDataOffline(queue, "..\\assets\\data\\offline_storage.txt", 20);
 		return true;
 	}
+
+	int count = 0;
+	offline = false;
+	connected = true;
+
 
 	while (strcmp(data, "-1") != 0) {
 		int intData = convertToInt(data);
@@ -219,6 +216,13 @@ bool getYtData(zsock_t* connection, Queue* queue) {
 		zstr_free(&fileName);
 		zstr_free(&subCount);
 		data = zstr_recv(connection);
+		count++;
+	}
+
+	// The amount we got from server is too low 
+	if (count <= MAX_SWAP_TO_OFFLINE) {
+		fprintf(stderr, "%s\n", "Video coun sent by server was very low...");
+		storeYTDataOffline(queue, "..\\assets\\data\\offline_storage.txt", 20 - count);
 	}
 
 	YTNode* current = queue->front;
@@ -230,15 +234,27 @@ bool getYtData(zsock_t* connection, Queue* queue) {
 }
 
 void startServer() {
+	connected = false;
 	char path[] = "..\\server";
+
+	char buffer[MAX_PATH];
+	if (getcwd(buffer, MAX_PATH) == NULL) {
+		fprintf(stderr, "%s\n", "Failed to get current working directory");
+		exit(1);
+	}
+
+	char* sysCommand = properConcat("start ..\\server\\server.exe ", buffer);
 
 	if (access(path, 0) == 0) {
 		// Starts the database
-		system("start python.exe ..\\server\\main.py");
+		system(sysCommand);
 		system("cls");
 	}
 	else {
 		printf("%s\n", "Start up Failed");
 		exit(1);
 	}
+	free(sysCommand);
+
+	printf("The cwd: %s\n", buffer);
 }

@@ -34,7 +34,8 @@ void readSaveData(char*** saveJSON, int objCount, int* entries) {
 
 void writeSaveData(const char* fileName, const char* array) {
 	// May add more in future
-	char* entryNames[] = { "stars", "max_score" };
+	char* entryNames[] = { "stars", "standard", "noSubs", "timer", 
+		"pointDeduct", "lessHeart", "noMil", "harshTimer" };
 
 	char*** data = malloc(sizeof(char**) * 1);
 	int* entries = malloc(sizeof(int) * 1);
@@ -75,9 +76,10 @@ int moreOrLess(bool more, Queue* queue, int score, int* state) {
 			if (score + 1 >= WINNING_SCORE) {
 				gameAttr->state = justWon;
 				// Hardest diff in this save was just beaten, add it and document it
-				if (difficulty == saveData[stars]) {
-					saveData[stars]++;
-					saveData[highScore] = 0;
+				if (difficulty >= saveData[stars]) {
+					// If any difficulties are skipped, their respective star will also be added
+					saveData[stars] += (difficulty - saveData[stars] + 1);
+					saveData[difficulty + 1] = WINNING_SCORE;
 					writeSaveData("..\\assets\\data\\save.json", "save_data");
 				}
 			}
@@ -105,9 +107,9 @@ int moreOrLess(bool more, Queue* queue, int score, int* state) {
 
 			if (gameAttr->health <= 0) {
 				gameAttr->state = justLost;
-				// Didn't win, but beat the score on their hardest diff, document it
-				if (difficulty == saveData[stars] && saveData[highScore] < score) {
-					saveData[highScore] = score;
+				// Didn't win, but beat the score on this diff, document it
+				if (saveData[difficulty + 1] < score) {
+					saveData[difficulty + 1] = score;
 					writeSaveData("..\\assets\\data\\save.json", "save_data");
 				}
 			}
@@ -141,9 +143,10 @@ int moreOrLess(bool more, Queue* queue, int score, int* state) {
 			if (score + 1 >= WINNING_SCORE) {
 				gameAttr->state = justWon;
 				// Hardest diff in this save was just beaten, add it and document it
-				if (difficulty == saveData[stars]) {
-					saveData[stars]++;
-					saveData[highScore] = 0;
+				if (difficulty >= saveData[stars]) {
+					// If any difficulties are skipped, their respective star will also be added
+					saveData[stars] += (difficulty - saveData[stars] + 1);
+					saveData[difficulty + 1] = WINNING_SCORE;
 					writeSaveData("..\\assets\\data\\save.json", "save_data");
 				}
 			}
@@ -171,6 +174,11 @@ int moreOrLess(bool more, Queue* queue, int score, int* state) {
 
 			if (gameAttr->health <= 0) {
 				gameAttr->state = justLost;
+				// Didn't win, but beat the score on this diff, document it
+				if (saveData[difficulty + 1] < score) {
+					saveData[difficulty + 1] = score;
+					writeSaveData("..\\assets\\data\\save.json", "save_data");
+				}
 			}
 
 			if (difficulty >= pointDeduct) {
@@ -376,7 +384,7 @@ void handleMouseClick(SDL_MouseButtonEvent button, bool* aboutToQuit, int* timeC
 			gameAttr->difficulty = -1;
 			printf("It is pressed\n");
 			// Can technically be pressed when invisible, so ignore it if it is
-		} else if (isPressed(event.button, playRect) && difficulty != -1) {
+		} else if (isPressed(event.button, playRect) && difficulty != -1 && difficultyUnlocked(difficulty)) {
 			gameAttr->state = titleToNormal;
 			printf("It is pressed\n");
 		}
@@ -405,9 +413,9 @@ void handleMouseClick(SDL_MouseButtonEvent button, bool* aboutToQuit, int* timeC
 
 int main() {
 	// Should be off for normal behavior
-	if (DEBUG) {
-		hideConsole();
-	}
+	//if (DEBUG) {
+	//	hideConsole();
+	//}
 	SDL_Init_All();
 	createFontArray();
 	bool gameRunning = true;
@@ -500,8 +508,8 @@ int main() {
 					// States where the game is business as usual
 					if (gameAttr->state >= normal && gameAttr->state <= gameWon) {
 						gameAttr->state = justQuit;
-						if (difficulty == saveData[stars] && saveData[highScore] < gameAttr->score) {
-							saveData[highScore] = gameAttr->score;
+						if (saveData[difficulty + 1] < gameAttr->score) {
+							saveData[difficulty + 1] = gameAttr->score;
 							writeSaveData("..\\assets\\data\\save.json", "save_data");
 						}
 					}

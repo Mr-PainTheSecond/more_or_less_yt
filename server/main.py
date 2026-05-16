@@ -9,9 +9,13 @@ try:
     from messages import Messages
     import random
     import threading
+    import time
     import httplib2.error
     import requests
     import sys
+    import json
+    import psutil
+    import codecs
     from dotenv import load_dotenv
     from rich import print
     import requests
@@ -26,16 +30,24 @@ except ImportError:
     subprocess.call([sys.executable,  "main.py", "python"])
     sys.exit(0)
 
+ytV3Doc = None
+
 class YouTubeData():
     def __init__(self, firstIndex = 0, path = "..\\assets\\images\\temp\\", storage = "storage.json"):
+        global ytV3Doc
         self.threads: list[threading.Thread] = list()
         self.urls = []
         self.lock = threading.Lock()
         self.path = path
         self.storage = storage
         self.indexes = []
+        self.apiDataFile =  "youtube.v3.json"
         self.noConnection = False
+        if ytV3Doc is None:
+            with codecs.open(self.apiDataFile, encoding='utf-8') as file:
+                ytV3Doc = file.read()
 
+        self.noConnection = False
         self.filesNames = []
         self.viewCounts = []
         self.subCount = []
@@ -44,7 +56,7 @@ class YouTubeData():
 
         # Loads our env file
         load_dotenv()
-        self.youtube = google.build("youtube", "v3", developerKey=os.getenv("YOUTUBE_API"))
+        self.youtube = google.build_from_document(ytV3Doc, developerKey=os.getenv("YOUTUBE_API"))
         os.chdir("server\\")
         
 
@@ -209,6 +221,7 @@ class YouTubeData():
             self.threads.append(newThread)
         
         if not utilities.connectionExists():
+            utilities.changeServerStatus("status.txt", 0)
             sys.exit(0)
         
         network = threading.Thread(None, messageManager.findConnection, args = (self.lock, usedIndexes, ))
@@ -221,16 +234,16 @@ class YouTubeData():
             thread.start()
         
         # Starts the main server
-        if globals.args != "fill":
+        if globals.args != "fill" and not messageManager.connectionDone:
             network.start()
             
-        if globals.args != "fill":
+        if globals.args != "fill" and not messageManager.connectionDone:
             network.join()    
         
         print("Main Network has finished")
         
         # Once the main server is done, we will do backup
-        if globals.args != "fill":
+        if globals.args != "fill" and not messageManager.connectionDone:
             backupNetwork.start() 
         
         for thread in self.threads:
@@ -240,7 +253,7 @@ class YouTubeData():
         with self.lock:
             globals.downloadComplete = True
         
-        if globals.args != "fill":
+        if globals.args != "fill" and not messageManager.connectionDone:
             backupNetwork.join()     
         
 
@@ -282,6 +295,23 @@ class YouTubeData():
         self.subCount.clear()
         
 if __name__ == "__main__":
+    try:
+        globals.args = sys.argv[1]
+        if globals.args not in globals.debugModes:
+            try:
+                os.chdir(globals.args)
+                os.chdir("..\\server")
+            except Exception as e:
+                print(e)
+                time.sleep(20)
+                raise
+                
+    except IndexError:
+        pass
+    
+    # Checks if the server is already running
+    utilities.awaitServer("status.txt", 5, 10)
+    
     global messageManager
     firstIndex = 0
     
@@ -292,10 +322,6 @@ if __name__ == "__main__":
     # This lock is used for the first iteration only
     firstLock = threading.Lock()
     # For running in debug modes
-    try:
-        globals.args = sys.argv[1]
-    except IndexError:
-        pass
     if globals.args != "fill":
         
          
@@ -304,18 +330,19 @@ if __name__ == "__main__":
             messageManager.sendNetworkError()
         # We can start sending data if internet connection
         else:
-            messageManager.findConnection(firstLock)  
+            
+            messageManager.findConnection(firstLock, first=True)
+            
     
     repetitions = 0
     while globals.serverRunning:
-        dataManager = YouTubeData(firstIndex)
         
-       
+        dataManager = YouTubeData(firstIndex)
         if not utilities.connectionExists():
             messageManager.sendNetworkError()
             continue
          # Data Collection takes time!!
-        serverBuffer = threading.Thread(None, messageManager.findConnection, args = ([], True,  ))
+        serverBuffer = threading.Thread(None, messageManager.findConnection, args = (dataManager.lock, [], True,  ))
         dataCollector = threading.Thread(None, dataManager.getData)
         
         globals.downloadComplete = False
@@ -340,6 +367,8 @@ if __name__ == "__main__":
         repetitions += 1
         if globals.args == "fill" and repetitions > 2:
             break
+    
+    utilities.changeServerStatus("status.txt", 0)
         
        
         

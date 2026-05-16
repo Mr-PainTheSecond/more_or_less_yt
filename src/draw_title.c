@@ -45,6 +45,7 @@ int drawTitle(int state) {
 	static ProjectedObject explanationRect;
 	static ProjectedObject beginGameLogo;
 	static ProjectedObject difficultyName;
+	static ProjectedObject victoryStar;
 
 	static ProjectedObject* rectArray;
 	static ProjectedObject* pfpRects;
@@ -285,9 +286,13 @@ int drawTitle(int state) {
 		//printf("%f %f\n", expX, expY);
 		explanationRect = createProjectedObject(expX, expY, (w / 4) * firstStopRatio, h * 3 / 4 * firstStopRatio, true);
 
-		float beginX = explanationRect.realRect.x +  ((w / 8) / firstStopRatio);
-		float beginY = explanationRect.realRect.y + (explanationRect.realRect.h) + (h / 16);
-		beginGameLogo = createProjectedObject(beginX, beginY, width, height, false);
+		float beginX = explanationRect.realRect.x +  ((w / 6) / firstStopRatio);
+		float beginY = explanationRect.realRect.y + (explanationRect.realRect.h) + (h / 12);
+		beginGameLogo = createProjectedObject(beginX, beginY, width * 3 / 4, height * 3 / 4, false);
+
+		float starX = (beginX + (width * 3 / 4 / firstStopRatio)) + (w / 16 / firstStopRatio);
+		float starY = beginY + (height * 3 / 8 / firstStopRatio);
+		victoryStar = createProjectedObject(starX, starY, h / 12 * firstStopRatio, h / 12 * firstStopRatio, false);
 
 		char*** jsonData = readJSONArray("..\\assets\\data\\description.json", "descriptions", &objs, &items);
 
@@ -296,12 +301,12 @@ int drawTitle(int state) {
 		int titleLocation = 1;
 		int lineCountLocation = 2;
 
-		TTF_Font** newFonts = malloc(sizeof(TTF_Font*) * (DIFFICULTY_COUNT + 1));
+		TTF_Font** newFonts = malloc(sizeof(TTF_Font*) * (objs));
 		if (newFonts == NULL) {
 			errorExit("Allocation for the new fonts failed");
 		}
 
-		for (int a = 0; a <= DIFFICULTY_COUNT; a++) {
+		for (int a = 0; a < objs; a++) {
 			char* diffName = jsonData[a][titleLocation];
 			int lineCount = convertToInt(jsonData[a][lineCountLocation]);
 			// JSON is formatted as lines -> first -> hasFont
@@ -311,7 +316,6 @@ int drawTitle(int state) {
 				char* fontLocation = jsonData[a][lineCountLocation + 3 + lineCount];
 				// Some fonts need to be made bigger, while others smaller
 				float scaleFactor = convertToFloat(jsonData[a][lineCountLocation + 7 + lineCount]);
-				printf("Index %d Font location %s\n", a, fontLocation);
 				newFonts[a] = createFont(fontLocation, TTF_GetFontSize(firstStopFont) * scaleFactor);
 			}
 			else {
@@ -344,12 +348,14 @@ int drawTitle(int state) {
 		// Also gotta undo real movements for these ones
 		explanationRect.realRect.y += expOffset / 2;
 		beginGameLogo.realRect.y += expOffset / 2;
+		victoryStar.realRect.y += expOffset / 2;
 		difficultyName.realRect.y -= expOffset;
 
 		// Important: Undo real movement first then unproject (can't do other way around)
 		explanationRect = unprojectObject(explanationRect);
 		beginGameLogo = unprojectObject(beginGameLogo);
 		difficultyName = unprojectObject(difficultyName);
+		victoryStar = unprojectObject(victoryStar);
 
 		// Unproject every element in the arrays
 
@@ -465,11 +471,13 @@ int drawTitle(int state) {
 		if (!isDiff) {
 			explanationRect.realRect.y -= expOffset / frames / 2;
 			beginGameLogo.realRect.y -= expOffset / frames / 2;
+			victoryStar.realRect.y -= expOffset / frames / 2;
 			difficultyName.realRect.y += expOffset / frames;
 		}
 		else {
 			explanationRect.realRect.y += expOffset / frames / 2;
 			beginGameLogo.realRect.y += expOffset / frames / 2;
+			victoryStar.realRect.y += expOffset / frames / 2;
 			difficultyName.realRect.y -= expOffset / frames;
 		}
 
@@ -478,6 +486,7 @@ int drawTitle(int state) {
 		explanationRect = projectRect(explanationRect, xDifference, yDifference);
 		beginGameLogo = projectRect(beginGameLogo, xDifference, yDifference);
 		difficultyName = projectRect(difficultyName, xDifference, yDifference);
+		victoryStar = projectRect(victoryStar, xDifference, yDifference);
 		/*zoomOutTxt(changingSmallFont, logoRect.realRect.x, logoRect.projectedRect.x + xDifference);*/
 
 
@@ -676,14 +685,21 @@ int drawTitle(int state) {
 	}
 	
 	// Can only start once difficulty selected
-	if (difficulty != -1)  {
+	if (difficulty != -1 && difficultyUnlocked(difficulty))  {
 		drawSmoothRectagle(beginGameLogo.projectedRect, blueColor.r, blueColor.g, blueColor.b, blueColor.a, beginGameLogo.projectedRect.w / 6);
 		displayTextAsSurface(beginGameLogo, playTxt);
 		displayTextAsSurface(difficultyName, difficultyNameTxt[difficulty]);
+		// This specific difficulty has been beaten, so we render the star for it on the title screen
+		if (saveData[difficulty + 1] >= WINNING_SCORE) {
+			SDL_RenderTexture(renderer, starImg, NULL, &(victoryStar.projectedRect));
+		}	
 	}
 	else {
 		// Title when no difficulty selected
-		displayTextAsSurface(difficultyName, difficultyNameTxt[DIFFICULTY_COUNT]);
+		int nameIndex;
+		if (difficulty == -1) nameIndex = DIFFICULTY_COUNT;
+		else nameIndex = DIFFICULTY_COUNT + 1;
+		displayTextAsSurface(difficultyName, difficultyNameTxt[nameIndex]);
 	}
 
 	// Only render the earned stars

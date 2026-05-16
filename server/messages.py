@@ -1,6 +1,7 @@
 import zmq
 import sys
 import os
+import time
 import globals
 import utilities
 import threading
@@ -12,11 +13,16 @@ class Messages:
         self.context = zmq.Context()
         self.path = "../assets/images/temp/"
         self.socket = self.context.socket(zmq.REP)
-        self.socket.bind("tcp://*:5555")
+        self.connectionDone = False
+        try:
+            self.socket.bind("tcp://*:5555")
+        # Another instance is already using this
+        except zmq.error.ZMQError:
+            sys.exit(0)
         # Time out after 1 second
         self.socket.setsockopt(zmq.RCVTIMEO, 1000)
     
-    def findConnection(self, lock: threading.Lock, illegalIndex = [], backup = False):
+    def findConnection(self, lock: threading.Lock, illegalIndex = [], backup = False, first = False):
         # The download is complete when we got here
         with lock:
             if backup and globals.downloadComplete:
@@ -33,8 +39,13 @@ class Messages:
         while True:
             try:
                 response = str(self.socket.recv())
-                # If a message is received, just break :)
-                break
+                # Edge case: First Connection and the server had to time out first
+                if globals.hadTimeOut:
+                    self.socket.send_string("ROGER")
+                    globals.hadTimeOut = False
+                # We can finally move :)
+                else:
+                    break
             # Designed so we can periodically check download status
             except zmq.error.Again:
                 with lock:
@@ -52,6 +63,8 @@ class Messages:
             else:
                 self.socket.send_string("DONE")
                 self.socket.close() 
+                with lock:
+                    self.connectionDone = True
             globals.serverRunning = False
             sys.exit(0)
             
@@ -65,21 +78,28 @@ class Messages:
         print("[green]Established a connection")
         with lock:
             batch = utilities.getStorageData("storage.json", illegalIndex)
-            self.sendYTData(batch["views"], batch["file"], batch["subs"])
+            self.sendYTData(batch["views"], batch["file"], batch["subs"], first)
         
         return True
     
-    def sendYTData(self, views, fileNames, subCount):
+    def sendYTData(self, views, fileNames, subCount, first = False):
         for view, file, subs in zip(views, fileNames, subCount, strict=True):
             print("views " + view)
             self.socket.send_string(view)
-            self.socket.recv()
+            status = str(self.socket.recv())
+            if status == "b\'STOP\'":
+                utilities.changeServerStatus("status.txt", 0)
+             
             print("file " + file)
             self.socket.send_string(file)
-            self.socket.recv()
+            status = str(self.socket.recv())
+            if status == "b\'STOP\'":
+                utilities.changeServerStatus("status.txt", 0)
             print("subs " + subs)
             self.socket.send_string(subs)
-            self.socket.recv()
+            status = self.socket.recv()
+            if status == "b\'STOP\'":
+                utilities.changeServerStatus("status.txt", 0)
         
         self.socket.send_string("-1")
     

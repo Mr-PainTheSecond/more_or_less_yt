@@ -89,6 +89,8 @@ TTF_Font* ytFont;
 SDL_FRect diffToTitle;
 SDL_FRect diffToPlay;
 ProjectedObject* diffSelect;
+bool offline;
+bool connected;
 int* saveData;
 int savePoints;
 int difficulty;

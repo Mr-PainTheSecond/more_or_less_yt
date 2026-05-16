@@ -29,6 +29,11 @@ float center(float pos, float size);
 
 char** readAndSplit(const char* fileName, char delimeter, int* size);
 
+/*Does a string concatination where
+A) The size is guaranteed to be enough
+B) It creates a new copy as oppose to overiding original*/
+char* properConcat(const char* str1, const char* str2);
+
 char** split(const char* str, char delimeter, int* size);
 
 char* join(char** arr, int lower, int upper, const char* newChar, int* newLen);

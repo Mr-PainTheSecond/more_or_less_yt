@@ -1,6 +1,8 @@
 import os
 import globals
 import requests
+import time
+import sys
 import json
 from rich import print
 import random
@@ -55,6 +57,35 @@ def randNoDupe(minInt, maxInt, used):
     
     return randNum
     
+"""Changes the server's status, one indicating it is 
+being used, zero meaning it is not being used"""
+def changeServerStatus(fileName, newStatus):
+    with open(fileName, "w") as file:
+        file.write(str(newStatus))
+
+"""If the server is currently being used, it will wait
+until it stops being used. Timeout specifies how much will
+be waited before status is changed, maxTimeOuts makes sure
+that it isn't stuck in here just in case something went wrong"""
+def awaitServer(fileName: str, timeout: float, maxTimeOuts: int):
+    serverUsed = True
+    timeOutCount = 0
+    while serverUsed:
+        try:
+            with open(fileName, "r") as file:
+                status = int(file.read())
+                if (status == 0):
+                    serverUsed = False
+                else:
+                    globals.hadTimeOut = True
+                    time.sleep(timeout)
+                    timeOutCount += 1
+                    if timeOutCount >= maxTimeOuts: raise Exception("The server was timeouted for too long")
+        # If the file doesn't exist, we can just make it and ignore this step
+        except FileNotFoundError:
+            break
+    
+    changeServerStatus(fileName, 1)
 
 def deleteEntry(file, views):
     text = None
