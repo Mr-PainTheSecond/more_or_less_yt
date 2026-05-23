@@ -5,3 +5,4 @@ yt_dlp==2025.10.22
 dotenv==0.9.9
 zmq==0.0.0
 psutil==6.0.0
+cryptography==48.0.0

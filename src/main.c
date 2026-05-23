@@ -416,6 +416,13 @@ int main() {
 	//if (DEBUG) {
 	//	hideConsole();
 	//}
+	hMutex = CreateMutex(NULL, false, "Local\\$myprogram$");
+
+	if (GetLastError() == ERROR_ALREADY_EXISTS) {
+		return 0;
+	}
+
+
 	SDL_Init_All();
 	createFontArray();
 	bool gameRunning = true;

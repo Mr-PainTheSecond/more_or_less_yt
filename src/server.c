@@ -238,12 +238,18 @@ void startServer() {
 	char path[] = "..\\server";
 
 	char buffer[MAX_PATH];
+	char parameter[MAX_PATH];
 	if (getcwd(buffer, MAX_PATH) == NULL) {
 		fprintf(stderr, "%s\n", "Failed to get current working directory");
 		exit(1);
 	}
 
-	char* sysCommand = properConcat("start ..\\server\\server.exe ", buffer);
+	// Ensure path is intepreted as one parameter
+	strcpy(parameter, "\"");
+	strcat(parameter, buffer);
+	strcat(parameter, "\"");
+
+	char* sysCommand = properConcat("start ..\\server\\server.exe ", parameter);
 
 	if (access(path, 0) == 0) {
 		// Starts the database

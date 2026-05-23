@@ -13,16 +13,18 @@ try:
     import httplib2.error
     import requests
     import sys
-    import json
-    import psutil
     import codecs
     from dotenv import load_dotenv
+    from cryptography.fernet import Fernet
     from rich import print
     import requests
+    import psutil
     import utilities
     import html
     import yt_dlp as ytd
     import googleapiclient.discovery as google
+    import googleapiclient.errors as googleErrors
+    
 except ImportError:
     # Some requirement hasn't been made, install them
     subprocess.check_call([sys.executable, "-m", "pip", "install", "-r", "requirements.txt"])
@@ -56,7 +58,31 @@ class YouTubeData():
 
         # Loads our env file
         load_dotenv()
-        self.youtube = google.build_from_document(ytV3Doc, developerKey=os.getenv("YOUTUBE_API"))
+        foundAPI = False
+        count = 0
+        encrypted = bool(os.getenv("ENCRYPTED"))
+        while not foundAPI:
+            newAPI = os.getenv("YOUTUBE_API_" + str(count))
+            if newAPI == "yt_key_here":
+                raise Exception("Make sure to go to the .env file and set a new API key")
+            
+            if not newAPI:
+                raise Exception("Server ran out of API keys, or the .env files does not exist")
+            try:
+                if encrypted:
+                    # If you store the API_KEY encrypted, make sure it is its decoded (string) version
+                    self.youtube = google.build_from_document(ytV3Doc, developerKey=Fernet(b'insert_key_here').decrypt(newAPI.encode()).decode())
+                else:
+                    self.youtube = google.build_from_document(ytV3Doc, developerKey=newAPI)
+                    
+                foundAPI = True
+            except googleErrors.HttpError as e:
+                # This API key is depleted
+                if e.status_code in (403, 429):
+                    count += 1
+                else:
+                    raise
+                    
         os.chdir("server\\")
         
 
@@ -310,7 +336,8 @@ if __name__ == "__main__":
         pass
     
     # Checks if the server is already running
-    utilities.awaitServer("status.txt", 5, 10)
+    utilities.awaitServer("status.txt", 5, 4)
+    
     
     global messageManager
     firstIndex = 0

@@ -377,7 +377,7 @@ FodyWeavers.xsd
 .env
 !.env.example
 
-# For Python files that are not part of running the server
-*_ignore.py
+# General Mark to exclude helper that are not actually running game
+*_ignore.*
 # One time use file
 /server/generate.py

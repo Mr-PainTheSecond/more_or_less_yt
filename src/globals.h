@@ -99,6 +99,7 @@ Queue* ytQueue;
 GameAttributes* gameAttr;
 SDL_Event event;
 zsock_t* requester;
+HANDLE hMutex;
 #endif
 
 

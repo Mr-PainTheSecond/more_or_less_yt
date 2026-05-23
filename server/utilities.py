@@ -1,8 +1,8 @@
-import os
+import sys
 import globals
 import requests
 import time
-import sys
+import psutil
 import json
 from rich import print
 import random
@@ -80,7 +80,20 @@ def awaitServer(fileName: str, timeout: float, maxTimeOuts: int):
                     globals.hadTimeOut = True
                     time.sleep(timeout)
                     timeOutCount += 1
-                    if timeOutCount >= maxTimeOuts: raise Exception("The server was timeouted for too long")
+                    if timeOutCount >= maxTimeOuts:
+                        currentPrograms = psutil.process_iter()
+                        instanceCount = len([p.name() for p in currentPrograms if p.name() == "server.exe"])
+                        frontEnd = [p.name() for p in currentPrograms if p.name() == "more_or_less_yt.exe"]
+                        # We can continue if this is the only server and the frontEnd needs us
+                        if (instanceCount <= 2) and frontEnd:
+                            serverUsed = False
+                        # The server status got messed up somehow
+                        elif (instanceCount <= 2):
+                            changeServerStatus(fileName, 0)
+                            sys.exit(0)
+                        # The game is just running
+                        else:
+                            sys.exit(0)
         # If the file doesn't exist, we can just make it and ignore this step
         except FileNotFoundError:
             break

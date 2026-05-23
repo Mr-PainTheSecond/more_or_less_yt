@@ -592,6 +592,7 @@ and if it is, it will ask the server for more data.*/
 int expandQueue(zsock_t* requester, Queue* queue, int counter) {
 	counter++;
 	if (queue->size <= 4) {
+		zsock_set_rcvtimeo(requester, 17);
 		if (!connected) {
 			if (zstr_recv(requester) != NULL) connected = true;
 		}
@@ -729,6 +730,7 @@ void quit(Queue* queue) {
 		zstr_recv(requester);
 	}
 
+	CloseHandle(hMutex);
 	zsock_destroy(&requester);
 }
 
