@@ -114,7 +114,6 @@ void createExplanationTxt(MultiLineText* explanationTxt, TTF_Font* font, char***
 		char* allText = join(jsonData[a], 3, 3 + jsonLines - 1, " ", &textWidth);
 		int charCount = strlen(allText);
 		int noAllConds = convertToInt(jsonData[a][lineCountIndex + 1 + jsonLines]);
-		printf("All conds message: %d\n", noAllConds);
 		// Every difficulty past one will say "All previous conditions apply"
 		if (noAllConds == 0) {
 			explanationTxt[a].lineCount++;
@@ -132,10 +131,8 @@ void createExplanationTxt(MultiLineText* explanationTxt, TTF_Font* font, char***
 		// Would be 0 or negative otherwise
 		if (charCount > 696) fontFactor = 0.005f;
 		else fontFactor = 1.5f - log(1 + charCount * 0.005f) / log(logBase);
-		printf("Font Factor: %f, New Font Size: %f\n", fontFactor, TTF_GetFontSize(font) * fontFactor);
 		TTF_SetFontSize(newFonts[a], TTF_GetFontSize(font) * fontFactor);
 
-		printf("Set Font Size: %f", TTF_GetFontSize(newFonts[a]));
 		// To determine the size of a single letter
 		TTF_Text* refTxt = TTF_CreateText(textEngine, newFonts[a], "a", strlen("a"));
 		TTF_GetTextSize(refTxt, &textWidth, &textHeight);

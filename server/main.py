@@ -71,7 +71,7 @@ class YouTubeData():
             try:
                 if encrypted:
                     # If you store the API_KEY encrypted, make sure it is its decoded (string) version
-                    self.youtube = google.build_from_document(ytV3Doc, developerKey=Fernet(b'insert_key_here').decrypt(newAPI.encode()).decode())
+                    self.youtube = google.build_from_document(ytV3Doc, developerKey=Fernet(b'INSERT_KEY_HERE').decrypt(newAPI.encode()).decode())
                 else:
                     self.youtube = google.build_from_document(ytV3Doc, developerKey=newAPI)
                     

@@ -381,3 +381,5 @@ FodyWeavers.xsd
 *_ignore.*
 # One time use file
 /server/generate.py
+
+*.msi

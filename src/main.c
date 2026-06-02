@@ -22,7 +22,6 @@ void readSaveData(char*** saveJSON, int objCount, int* entries) {
 		for (int b = 0; b < entries[a]; b++) {
 			int savePoint = convertToInt(saveJSON[a][b]);
 
-			printf("Save Point %d: %d\n", b, savePoint);
 			saveData[b] = savePoint;
 		}
 	}
@@ -261,8 +260,18 @@ void SDL_Init_All() {
 }
 
 void hideConsole() {
-	HWND consoleWindow = GetConsoleWindow();
-	ShowWindow(consoleWindow, SW_HIDE);
+	/*HWND consoleWindow = GetConsoleWindow();
+	if (!ShowWindow(consoleWindow, SW_HIDE)) {
+		fprintf(stderr, "%u\n", GetLastError());
+	}*/
+
+	/*if (!freopen("out.txt", "w", stdout)) {
+		exit(1);
+	}
+
+	if (!freopen("out.txt", "w", stderr)) {
+		exit(1);
+	}*/
 }
 
 /*Creates a  structure that keeps track of important variables
@@ -411,17 +420,21 @@ void handleMouseClick(SDL_MouseButtonEvent button, bool* aboutToQuit, int* timeC
 }
 
 
-int main() {
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
+	PSTR szCmdParam, int iCmdShow) {
 	// Should be off for normal behavior
-	//if (DEBUG) {
-	//	hideConsole();
-	//}
+	if (!DEBUG) {
+		hideConsole();
+		printf("Console hidden\n");
+	}
+
 	hMutex = CreateMutex(NULL, false, "Local\\$myprogram$");
 
 	if (GetLastError() == ERROR_ALREADY_EXISTS) {
 		return 0;
 	}
 
+	printf("Doesn't exist\n");
 
 	SDL_Init_All();
 	createFontArray();
@@ -487,6 +500,8 @@ int main() {
 	// First Bit: W is allowed; Second Bit: S is allowed;
 	// Added as need be.
 	int keysAllowed = 7;
+
+
 	while (gameRunning) {
 
 		// DON'T PUT NON EVENT SHIT INSIDE EVENT LOOP

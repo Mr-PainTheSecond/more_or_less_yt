@@ -21,6 +21,15 @@ zsock_t* establishConnection() {
 
 	printf("Set time out\n");
 	zstr_send(requester, "CONNECTION");
+	char* response = zstr_recv(requester);
+	printf("%s\n", response);
+
+	if (response != NULL) {
+		zstr_send(requester, "CONNECTION_FULL");
+		connected = true;
+		zstr_free(&response);
+	}
+
 	printf("Message sent\n");
 	return requester;
 }
@@ -178,14 +187,24 @@ bool getYtData(zsock_t* connection, Queue* queue) {
 	printf("%s\n", data);
 	if (data == NULL) {
 		offline = true;
+		zsock_set_rcvtimeo(requester, 100);
 		storeYTDataOffline(queue, "..\\assets\\data\\offline_storage.txt", 20);
 		return true;
+	}
+
+	// Handles first rcv timeout but second didn't
+	if (!connected) {
+		connected = true;
+		zstr_send(connection, "CONNECTION_FULL");
+		zstr_free(&data);
+		data = zstr_recv(connection);
 	}
 
 	// Server is busy getting data, so we need to use offline data
 	if (strcmp(data, "NOT_READY") == 0) {
 		connected = true;
 		offline = true;
+		zstr_free(&data);
 		printf("%s\n", "System works?");
 		storeYTDataOffline(queue, "..\\assets\\data\\offline_storage.txt", 20);
 		return true;
@@ -195,6 +214,7 @@ bool getYtData(zsock_t* connection, Queue* queue) {
 	if (strcmp(data, "LOST") == 0) {
 		connected = true;
 		offline = true;
+		zstr_free(&data);
 		fprintf(stderr, "%s\n", "CONNECTION LOST");
 		storeYTDataOffline(queue, "..\\assets\\data\\offline_storage.txt", 20);
 		return true;
@@ -213,6 +233,7 @@ bool getYtData(zsock_t* connection, Queue* queue) {
 		char* subCount = zstr_recv(connection);
 		storeYTData(queue, data, intData, fileName, subCount);
 		zstr_send(connection, "Roger");
+		zstr_free(&data);
 		zstr_free(&fileName);
 		zstr_free(&subCount);
 		data = zstr_recv(connection);
@@ -249,12 +270,19 @@ void startServer() {
 	strcat(parameter, buffer);
 	strcat(parameter, "\"");
 
-	char* sysCommand = properConcat("start ..\\server\\server.exe ", parameter);
+	char* sysCommand;
+
+	if (PYTHON_MODE) {
+		sysCommand = properConcat("..\\server\\server.py", "");
+	} else {
+		sysCommand = properConcat("..\\server\\server.exe", "");
+	}
 
 	if (access(path, 0) == 0) {
 		// Starts the database
-		system(sysCommand);
-		system("cls");
+		//system(sysCommand);
+		ShellExecuteA(NULL, "open", "..\\server\\server.exe", parameter, NULL, SW_HIDE);
+		//system("cls");
 	}
 	else {
 		printf("%s\n", "Start up Failed");

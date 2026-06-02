@@ -1,0 +1,29 @@
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+    <Fragment>
+    <StandardDirectory Id="ProgramFilesFolder">
+        <Directory Id="INSTALLFOLDER" Name="More Or Less YT">
+            <Directory Id="x64" Name = "more_or_less_yt"/>
+            <Directory Id="server" Name="server"/>
+            <Directory Id="assets" Name="assets">
+                <Directory Id="data" Name = "data"/>
+                <Directory Id="font" Name = "font"/>
+                <Directory Id="Imgs" Name = "images">
+                    <Directory Id="temp" Name = "temp"/>
+                    <Directory Id="perm" Name = "perm">
+                        <Directory Id="offline" Name = "offline"/>
+                        <Directory Id="other" Name = "other"/>
+                        <Directory Id="pfp" Name = "pfp"/>
+                        <Directory Id="thumbnail" Name = "thumbnail"/>
+                        <Directory Id="final_screen" Name="final_screen">
+                            <Directory Id="final_0" Name="0">
+                                <Directory Id="loser_0" Name="loser"/>
+                                <Directory Id="winner_0" Name="winner"/>
+                            </Directory>
+                        </Directory>
+                    </Directory>
+                </Directory>
+            </Directory>
+        </Directory>
+    </StandardDirectory>
+    </Fragment>
+</Wix>

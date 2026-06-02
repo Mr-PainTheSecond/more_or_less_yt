@@ -139,7 +139,6 @@ char*** readJSONArray(const char* fileName, const char* array, int* objCount, in
 	char newChar = fgetc(jsonFile);
 	bool foundArray = false;
 	bool potentialArray = false;
-	printf("%s\n", "Setup was good");
 
 	while (!foundArray){
 		if (newChar == EOF) {
@@ -149,7 +148,6 @@ char*** readJSONArray(const char* fileName, const char* array, int* objCount, in
 		}
 
 		if (newChar == '"') {
-			printf("%s\n", "Found potential array");
 			char tempBuffer[100];
 			int charCount = 0;
 			newChar = fgetc(jsonFile);
@@ -167,7 +165,6 @@ char*** readJSONArray(const char* fileName, const char* array, int* objCount, in
 		newChar = fgetc(jsonFile);
 	}
 
-	printf("%s\n", "Found array in JSON");
 	// We are gonna find our first entry
 	while (newChar != '{' && newChar != EOF) {
 		newChar = fgetc(jsonFile);
@@ -244,7 +241,6 @@ char*** readJSONArray(const char* fileName, const char* array, int* objCount, in
 			itemCount++;
 		}
 
-		printf("%s\n", "Finished reading entry");
 
 		char** temp = realloc(data[entryCount], sizeof(char*) * itemCount);
 		if (temp == NULL) {
@@ -253,10 +249,8 @@ char*** readJSONArray(const char* fileName, const char* array, int* objCount, in
 			exit(1);
 		}
 
-		printf("The item count for this %d\n", itemCount);
 		data[entryCount] = temp;
 		(*entries)[entryCount] = itemCount;
-		printf("%d\n", (*entries)[entryCount]);
 		entryCount++;
 
 		newChar = fgetc(jsonFile);
@@ -581,7 +575,6 @@ char* join(char** arr, int lower, int upper, const char* newChar, int* newLen) {
 
 	newStr[*newLen] = '\0';
 
-	printf("%s %d\n", newStr, *newLen);
 	
 	return newStr;
 }
@@ -592,7 +585,7 @@ and if it is, it will ask the server for more data.*/
 int expandQueue(zsock_t* requester, Queue* queue, int counter) {
 	counter++;
 	if (queue->size <= 4) {
-		zsock_set_rcvtimeo(requester, 17);
+		zsock_set_rcvtimeo(requester, 100);
 		if (!connected) {
 			if (zstr_recv(requester) != NULL) connected = true;
 		}
@@ -707,7 +700,17 @@ void copyDymTxt(DynamicText* dstTxt, DynamicText* srcTxt) {
 
 /*Quits/Frees all global variables, stops the server*/
 void quit(Queue* queue) {
-	zstr_send(requester, "STOP");
+	SDL_HideWindow(window);
+	if (!connected) {
+		// Server has timeout logic that we may need to address
+		char* buffer = zstr_recv(requester);
+		if (buffer != NULL) {
+			zstr_send(requester, "STOP");
+		}
+	}
+	else {
+		zstr_send(requester, "STOP");
+	}
 	SDL_DestroySurface(screen->surface);
 	free(screen);
 	freeFontArray();

@@ -93,5 +93,8 @@
 // The max number of entries where the game decides to take from offline data
 #define MAX_SWAP_TO_OFFLINE 5
 
+// Where it should run python script or executable
+#define PYTHON_MODE 0
+
 #endif // !CONFIG_H_
 

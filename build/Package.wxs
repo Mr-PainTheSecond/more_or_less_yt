@@ -1,0 +1,50 @@
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+xmlns:Util="http://wixtoolset.org/schemas/v4/wxs/util">
+    <Package
+    Name="More Or Less YT"
+    Manufacturer="Santiago Sanhueza"
+    Version="1.0.0.0"
+    UpgradeCode="56985ea2-acd4-4f1b-96d8-3aa5d2c25ec2">
+
+    <Media Id="1" Cabinet="MoreOrLess" EmbedCab="yes"/>
+    <!-- Allow major upgrades, remove older versions -->
+    <MajorUpgrade DowngradeErrorMessage="A newer version is already installed." />
+
+    <ComponentGroup Id="Shortcut_Group">
+      <Component Id="Shortcut" Directory="DesktopFolder">
+        <Shortcut Id="DesktopShortcut"
+        Name="More Or Less YT"
+        Target="[INSTALLFOLDER]/more_or_less_yt/more_or_less_yt.exe"
+        WorkingDirectory="x64" >
+          <Icon Id="Shortcut_Img" SourceFile="C:\Users\santi\source\repos\more_or_less_yt\more_or_less_yt\icon.ico" />
+        </Shortcut>
+        
+      
+        <RegistryValue Root="HKCU"
+        Key="Software\MoreOrLessYT"
+        Name="installed"
+        Type="integer" Value="1"
+        KeyPath="yes" />
+      </Component>
+    </ComponentGroup>
+
+    <!-- Feature (user-selectable install unit) -->
+    <Feature Id="Complete" Title="offline" Level="1">
+      <ComponentGroupRef Id="Shortcut_Group" />
+      <ComponentGroupRef Id="offline_img" />
+      <ComponentGroupRef Id="online_img" />
+      <ComponentGroupRef Id="title_pfp" />
+      <ComponentGroupRef Id="title_thumbnail" />
+      <ComponentGroupRef Id="other_imgs" />
+      <ComponentGroupRef Id="data_assets" />
+      <ComponentGroupRef Id="env" />
+      <ComponentGroupRef Id="font_assets" />
+      <ComponentGroupRef Id="zero_img_winner" />
+      <ComponentGroupRef Id="zero_img_loser" />
+      <ComponentGroupRef Id="main_files" />
+    </Feature>
+    <Feature Id="server_feature" Title="Server" Level="1">
+      <ComponentGroupRef Id="server_files" />
+    </Feature>
+  </Package>
+</Wix>

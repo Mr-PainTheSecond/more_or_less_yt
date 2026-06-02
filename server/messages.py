@@ -40,7 +40,7 @@ class Messages:
             try:
                 response = str(self.socket.recv())
                 # Edge case: First Connection and the server had to time out first
-                if globals.hadTimeOut:
+                if globals.hadTimeOut or response == "b\'CONNECTION\'":
                     self.socket.send_string("ROGER")
                     globals.hadTimeOut = False
                 # We can finally move :)

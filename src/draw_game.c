@@ -138,7 +138,7 @@ void handleNoMil(Queue* queue, int* counter) {
 
 	// Dequeue current elemet if it has more than a million
 	if (currentNode->views >= 1000000) {
-		deQueue(queue, currentNode);
+		deQueue(queue, currentNode->next);
 		*counter = expandQueue(requester, queue, *counter);
 		// To see if our new element is good to go or not
 		handleNoMil(queue, counter);
@@ -223,7 +223,9 @@ int drawMoreOrLess(TTF_Text* moreTxt, TTF_Text* lessTxt, Queue* queue, int* coun
 
 			// Dequeue twice so the elements don't repeat w/ new game
 			deQueue(ytQueue, ytQueue->front->next);
+			int stupidBuffer = expandQueue(requester, ytQueue, 0);
 			deQueue(ytQueue, ytQueue->front->next);
+			stupidBuffer = expandQueue(requester, ytQueue, 0);
 
 			startingTime = clock();
 		}
@@ -309,6 +311,8 @@ int drawMoreOrLess(TTF_Text* moreTxt, TTF_Text* lessTxt, Queue* queue, int* coun
 			gameAttr->timer = STARTING_TIME_HARSH;
 		}
 
+		// Initialized before doing mil check
+		data = queue->front->views;
 		handleNoMil(ytQueue, &data);
 	}
 	
