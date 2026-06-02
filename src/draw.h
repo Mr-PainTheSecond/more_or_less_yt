@@ -10,6 +10,6 @@
 #include "draw_game.h"
 #include "utilities.h"
 
-int draw(TTF_Text* more, TTF_Text* less, Queue* queue);
+int draw(TTF_Text* more, TTF_Text* less, Queue* queue, int* counter);
 float center(float pos, float size);
 #endif

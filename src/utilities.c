@@ -2,12 +2,12 @@
 
 /*Takes a string representation of an integer,
 returns its integer represenation*/
-int convertToInt(char* sInt) {
+u_int64 convertToInt(char* sInt) {
 	int sIntSize = strlen(sInt);
-	int finalInt = 0;
+	u_int64 finalInt = 0;
 	for (int a = 0; a < sIntSize; a++) {
 		int digit = (int)(sInt[a]) - 48;
-		int addedDigit = pow(10, sIntSize - a - 1) * digit;
+		u_int64 addedDigit = pow(10, sIntSize - a - 1) * digit;
 		finalInt += addedDigit;
 	}
 
@@ -139,7 +139,6 @@ char*** readJSONArray(const char* fileName, const char* array, int* objCount, in
 	char newChar = fgetc(jsonFile);
 	bool foundArray = false;
 	bool potentialArray = false;
-	printf("%s\n", "Setup was good");
 
 	while (!foundArray){
 		if (newChar == EOF) {
@@ -149,7 +148,6 @@ char*** readJSONArray(const char* fileName, const char* array, int* objCount, in
 		}
 
 		if (newChar == '"') {
-			printf("%s\n", "Found potential array");
 			char tempBuffer[100];
 			int charCount = 0;
 			newChar = fgetc(jsonFile);
@@ -167,7 +165,6 @@ char*** readJSONArray(const char* fileName, const char* array, int* objCount, in
 		newChar = fgetc(jsonFile);
 	}
 
-	printf("%s\n", "Found array in JSON");
 	// We are gonna find our first entry
 	while (newChar != '{' && newChar != EOF) {
 		newChar = fgetc(jsonFile);
@@ -244,7 +241,6 @@ char*** readJSONArray(const char* fileName, const char* array, int* objCount, in
 			itemCount++;
 		}
 
-		printf("%s\n", "Finished reading entry");
 
 		char** temp = realloc(data[entryCount], sizeof(char*) * itemCount);
 		if (temp == NULL) {
@@ -253,10 +249,8 @@ char*** readJSONArray(const char* fileName, const char* array, int* objCount, in
 			exit(1);
 		}
 
-		printf("The item count for this %d\n", itemCount);
 		data[entryCount] = temp;
 		(*entries)[entryCount] = itemCount;
-		printf("%d\n", (*entries)[entryCount]);
 		entryCount++;
 
 		newChar = fgetc(jsonFile);
@@ -299,6 +293,39 @@ char*** readJSONArray(const char* fileName, const char* array, int* objCount, in
 	*objCount = entryCount;
 	return data;
 }
+
+/*Creates a new JSON file or overwrites one contains a
+JSON array nammed after array. Only takes in strings.
+Covert to string first if writing ints, floats, etc.*/
+void writeJSONArray(const char* fileName, const char* array, char** entryNames, char*** data, int objCount, int* entries) {
+	FILE* jsonFile = fopen(fileName, "w");
+	if (jsonFile == NULL) {
+		fprintf(stderr, "%s\n", "Something has gone wrong with the JSON file/doesn't exist");
+		quit(ytQueue);
+		exit(1);
+	}
+	fprintf(jsonFile, "{\n\t\"%s\": [\n", array);
+
+
+	// Goes through each obj in arrray
+	for (int a = 0; a < objCount; a++) {
+		fprintf(jsonFile, "\t\t{\n");
+		for (int b = 0; b < entries[a]; b++) {
+			fprintf(jsonFile, "\t\t\t\"%s\": \"%s\"", entryNames[b], data[a][b]);
+			if (b != entries[a] - 1) {
+				fprintf(jsonFile, ",");
+			}
+			fprintf(jsonFile, "\n");
+		}
+		fprintf(jsonFile, "\t\t}");
+		if (a != objCount - 1) {
+			fprintf(jsonFile, ",");
+		}
+		fprintf(jsonFile, "\n");
+	}
+	fprintf(jsonFile, "\t]\n}");
+	fclose(jsonFile);
+}	
 
 /*Frees an Array read from I/O after it has been used up*/
 void freeJSONArray(char*** data, int objCount, int* entries) {
@@ -507,6 +534,21 @@ char** split(const char* str, char delimeter, int* size) {
 	return words;
 }
 
+/*Does a string concatination where
+A) The size is guaranteed to be enough
+B) It creates a new copy as oppose to overiding original*/
+char* properConcat(const char* str1, const char* str2) {
+	char* newStr = malloc(sizeof(char) * (strlen(str1) + strlen(str2) + 1));
+	if (newStr == NULL) {
+		fprintf(stderr, "%s\n", "Allocation of new string failed");
+		quit(ytQueue);
+		exit(1);
+	}
+	strcpy(newStr, str1);
+	strcat(newStr, str2);
+	return newStr;
+}	
+
 /*Given an array of string, joins them to become one string which are each seperated
 by the string specified in newChar*/
 char* join(char** arr, int lower, int upper, const char* newChar, int* newLen) {
@@ -533,7 +575,6 @@ char* join(char** arr, int lower, int upper, const char* newChar, int* newLen) {
 
 	newStr[*newLen] = '\0';
 
-	printf("%s %d\n", newStr, *newLen);
 	
 	return newStr;
 }
@@ -544,8 +585,12 @@ and if it is, it will ask the server for more data.*/
 int expandQueue(zsock_t* requester, Queue* queue, int counter) {
 	counter++;
 	if (queue->size <= 4) {
+		zsock_set_rcvtimeo(requester, 100);
+		if (!connected) {
+			if (zstr_recv(requester) != NULL) connected = true;
+		}
 		// Let the server know we are ready for more
-		zstr_send(requester, "Roger");
+		if (connected) zstr_send(requester, "Roger");
 		if (!getYtData(requester, queue)) {
 			return -1;
 		}
@@ -577,12 +622,17 @@ float center(float pos, float size) {
 	return pos - (size / 2);
 }
 
+void deleteNode(YTNode* node) {
+	SDL_DestroyTexture(node->img);
+	free(node->filePath);
+	free(node->sViews);
+	free(node->subs);
+	free(node);
+}
+
 void deQueue(Queue* queue, YTNode* next) {
 	YTNode* oldFront = queue->front;
-	SDL_DestroyTexture(oldFront->img);
-	free(oldFront->filePath);
-	free(oldFront->sViews);
-	free(oldFront);
+	deleteNode(oldFront);
 	queue->front = next;
 	if (queue->front == NULL || queue->front->next == NULL) {
 		zstr_send(requester, "STOP");
@@ -650,7 +700,17 @@ void copyDymTxt(DynamicText* dstTxt, DynamicText* srcTxt) {
 
 /*Quits/Frees all global variables, stops the server*/
 void quit(Queue* queue) {
-	zstr_send(requester, "STOP");
+	SDL_HideWindow(window);
+	if (!connected) {
+		// Server has timeout logic that we may need to address
+		char* buffer = zstr_recv(requester);
+		if (buffer != NULL) {
+			zstr_send(requester, "STOP");
+		}
+	}
+	else {
+		zstr_send(requester, "STOP");
+	}
 	SDL_DestroySurface(screen->surface);
 	free(screen);
 	freeFontArray();
@@ -668,10 +728,21 @@ void quit(Queue* queue) {
 	free(offlineVideos);
 
 	// We need to shutdown backup too.
-	if (strcmp(zstr_recv(requester), "ONE_MORE") == 0) {
+	if (!offline && strcmp(zstr_recv(requester), "ONE_MORE") == 0) {
 		zstr_send(requester, "STOP");
 		zstr_recv(requester);
 	}
 
+	CloseHandle(hMutex);
 	zsock_destroy(&requester);
+}
+
+bool difficultyUnlocked(int difficultyIndex) {
+	// This difficulty is beaten or hardest accessible
+	if (saveData[stars] >= difficultyIndex) return true;
+	// Timer was beaten, so every difficulty is unlocked
+	if (saveData[stars] >= SECOND_UNLOCK) return true;
+	// Standard was beaten, not timer
+	if (saveData[stars] >= FIRST_UNLOCK && difficultyIndex < SECOND_UNLOCK) return true;
+	return false;
 }

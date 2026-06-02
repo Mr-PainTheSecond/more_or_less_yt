@@ -104,13 +104,14 @@ void drawFinalScreen() {
 	SDL_RenderTexture(renderer, background, NULL, &winRect);
 	SDL_RenderTexture(renderer, pfp, NULL, &pfpRect);
 
+
 	displayText(videoTxtRect, videoTxt, &x, &y);
 	displayText(announceRect, stateTxt, &x, &y);
 	displayText(quitRect, quitTxt, &x, &y);
 	displayText(menuRect, menuTxt, &x, &y);
 }
 
-int draw(TTF_Text* more, TTF_Text* less, Queue* queue) {
+int draw(TTF_Text* more, TTF_Text* less, Queue* queue, int* counter) {
 	// Clears the renderer
 	static bool firstIter = true;
 	SDL_SetRenderDrawColor(renderer, 128, 0, 32, SDL_ALPHA_OPAQUE);
@@ -126,7 +127,7 @@ int draw(TTF_Text* more, TTF_Text* less, Queue* queue) {
 
 	// There is a LOT of states within the regular game logic
 	if (gameAttr->state >= normal && gameAttr->state <= justWon || gameAttr->state == shutDown) {
-		gameAttr->state = drawMoreOrLess(more, less, queue);
+		gameAttr->state = drawMoreOrLess(more, less, queue, counter);
 	}
 	if (gameAttr->state >= justLost && gameAttr->state <= gameWon || gameAttr->state == shutDown) {
 		drawFinalScreen();
@@ -134,6 +135,27 @@ int draw(TTF_Text* more, TTF_Text* less, Queue* queue) {
 	if (firstIter) {
 		SDL_ShowWindow(window);
 		firstIter = false;
+		// We can only load the icon once the window is shown
+		HWND hwnd = GetActiveWindow();
+		if (hwnd) {
+
+			HICON h = (HICON)LoadImage(
+				NULL, L"icon.ico",
+				IMAGE_ICON, 256, 256, LR_LOADFROMFILE | LR_SHARED);
+			if (h) {
+				printf("Successfully Loaded Icon\n");
+				SendMessage(hwnd, WM_SETICON, ICON_BIG, (LPARAM)h);
+				SendMessage(hwnd, WM_SETICON, ICON_SMALL, (LPARAM)h);
+				printf("%u\n", GetLastError());
+			}
+			else {
+				printf("%u\n", GetLastError());
+				printf("Failed to Load Icon");
+			}
+		}
+		else {
+			printf("Failed to Get Active Window");
+		}
 	}
 
 

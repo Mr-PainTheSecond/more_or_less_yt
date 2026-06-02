@@ -9,15 +9,22 @@ try:
     from messages import Messages
     import random
     import threading
+    import time
     import httplib2.error
+    import requests
     import sys
+    import codecs
     from dotenv import load_dotenv
+    from cryptography.fernet import Fernet
     from rich import print
     import requests
+    import psutil
     import utilities
     import html
     import yt_dlp as ytd
     import googleapiclient.discovery as google
+    import googleapiclient.errors as googleErrors
+    
 except ImportError:
     # Some requirement hasn't been made, install them
     subprocess.check_call([sys.executable, "-m", "pip", "install", "-r", "requirements.txt"])
@@ -25,16 +32,24 @@ except ImportError:
     subprocess.call([sys.executable,  "main.py", "python"])
     sys.exit(0)
 
+ytV3Doc = None
+
 class YouTubeData():
     def __init__(self, firstIndex = 0, path = "..\\assets\\images\\temp\\", storage = "storage.json"):
+        global ytV3Doc
         self.threads: list[threading.Thread] = list()
         self.urls = []
         self.lock = threading.Lock()
         self.path = path
         self.storage = storage
         self.indexes = []
+        self.apiDataFile =  "youtube.v3.json"
         self.noConnection = False
+        if ytV3Doc is None:
+            with codecs.open(self.apiDataFile, encoding='utf-8') as file:
+                ytV3Doc = file.read()
 
+        self.noConnection = False
         self.filesNames = []
         self.viewCounts = []
         self.subCount = []
@@ -43,7 +58,31 @@ class YouTubeData():
 
         # Loads our env file
         load_dotenv()
-        self.youtube = google.build("youtube", "v3", developerKey=os.getenv("YOUTUBE_API"))
+        foundAPI = False
+        count = 0
+        encrypted = bool(os.getenv("ENCRYPTED"))
+        while not foundAPI:
+            newAPI = os.getenv("YOUTUBE_API_" + str(count))
+            if newAPI == "yt_key_here":
+                raise Exception("Make sure to go to the .env file and set a new API key")
+            
+            if not newAPI:
+                raise Exception("Server ran out of API keys, or the .env files does not exist")
+            try:
+                if encrypted:
+                    # If you store the API_KEY encrypted, make sure it is its decoded (string) version
+                    self.youtube = google.build_from_document(ytV3Doc, developerKey=Fernet(b'INSERT_KEY_HERE').decrypt(newAPI.encode()).decode())
+                else:
+                    self.youtube = google.build_from_document(ytV3Doc, developerKey=newAPI)
+                    
+                foundAPI = True
+            except googleErrors.HttpError as e:
+                # This API key is depleted
+                if e.status_code in (403, 429):
+                    count += 1
+                else:
+                    raise
+                    
         os.chdir("server\\")
         
 
@@ -64,7 +103,7 @@ class YouTubeData():
             "quiet": True,
             "no_warnings": True
         }
-        with ytd.YoutubeDL(options) as ydl:
+        with ytd.YoutubeDL(options) as ydl: # type: ignore
             try:
                 thumbnailUrl = ydl.extract_info(url, download=False)
                 return thumbnailUrl.get("thumbnail")
@@ -83,6 +122,7 @@ class YouTubeData():
             response = request.execute()
         except httplib2.error.ServerNotFoundError:
             self.noConnection = True
+            globals.serverRunning = False
             print("HELLO")
             if globals.args != "fill":
                 messageManager.sendNetworkError()
@@ -149,17 +189,28 @@ class YouTubeData():
         
         category = random.choice(globals.typeList)
         result = None
-        if globals.args != "view_test":
+        # Forces videos from Jacksepticeye so we can check if views are good
+        if globals.args == "view_test":
+            self.cursor.execute("SELECT * FROM youtube where CHANNEL = \'jacksepticeye\'")
+        
+        else:
             if category == "gaming":
                 self.cursor.execute("SELECT * FROM youtube WHERE category_id = 20")
             elif category == "beauty":
                 self.cursor.execute("SELECT * FROM youtube WHERE category_id = 26")
             elif category == "music":
                 self.cursor.execute("SELECT * FROM youtube WHERE category_id = 10")
+            elif category == "pets":
+                self.cursor.execute("SELECT * FROM youtube WHERE category_id = 15")
+            elif category == "sports":
+                self.cursor.execute("SELECT * FROM youtube WHERE category_id = 17")
+            elif category == "politics":
+                self.cursor.execute("SELECT * FROM youtube WHERE category_id = 25")
+            elif category == "science":
+                self.cursor.execute("SELECT * FROM youtube WHERE category_id = 28")
             elif category == "random":
                 self.cursor.execute("SELECT * FROM youtube")
-        else:
-            self.cursor.execute("SELECT * FROM youtube where CHANNEL = \'jacksepticeye\'")
+        
 
         
         result = self.cursor.fetchall()
@@ -195,6 +246,10 @@ class YouTubeData():
                 print(self.urls[j] + " " + self.viewCounts[j])
             self.threads.append(newThread)
         
+        if not utilities.connectionExists():
+            utilities.changeServerStatus("status.txt", 0)
+            sys.exit(0)
+        
         network = threading.Thread(None, messageManager.findConnection, args = (self.lock, usedIndexes, ))
         backupNetwork = threading.Thread(None, messageManager.findConnection, args = (self.lock, usedIndexes, True,  )) 
         
@@ -205,16 +260,16 @@ class YouTubeData():
             thread.start()
         
         # Starts the main server
-        if globals.args != "fill":
+        if globals.args != "fill" and not messageManager.connectionDone:
             network.start()
             
-        if globals.args != "fill":
+        if globals.args != "fill" and not messageManager.connectionDone:
             network.join()    
         
         print("Main Network has finished")
         
         # Once the main server is done, we will do backup
-        if globals.args != "fill":
+        if globals.args != "fill" and not messageManager.connectionDone:
             backupNetwork.start() 
         
         for thread in self.threads:
@@ -224,7 +279,7 @@ class YouTubeData():
         with self.lock:
             globals.downloadComplete = True
         
-        if globals.args != "fill":
+        if globals.args != "fill" and not messageManager.connectionDone:
             backupNetwork.join()     
         
 
@@ -266,6 +321,24 @@ class YouTubeData():
         self.subCount.clear()
         
 if __name__ == "__main__":
+    try:
+        globals.args = sys.argv[1]
+        if globals.args not in globals.debugModes:
+            try:
+                os.chdir(globals.args)
+                os.chdir("..\\server")
+            except Exception as e:
+                print(e)
+                time.sleep(20)
+                raise
+                
+    except IndexError:
+        pass
+    
+    # Checks if the server is already running
+    utilities.awaitServer("status.txt", 5, 4)
+    
+    
     global messageManager
     firstIndex = 0
     
@@ -276,19 +349,27 @@ if __name__ == "__main__":
     # This lock is used for the first iteration only
     firstLock = threading.Lock()
     # For running in debug modes
-    try:
-        globals.args = sys.argv[1]
-    except IndexError:
-        pass
     if globals.args != "fill":
-        messageManager.findConnection(firstLock)  
+        
+         
+        
+        if not utilities.connectionExists():
+            messageManager.sendNetworkError()
+        # We can start sending data if internet connection
+        else:
+            
+            messageManager.findConnection(firstLock, first=True)
+            
     
     repetitions = 0
     while globals.serverRunning:
-        dataManager = YouTubeData(firstIndex)
         
-        # Data Collection takes time!!
-        serverBuffer = threading.Thread(None, messageManager.findConnection, args = ([], True,  ))
+        dataManager = YouTubeData(firstIndex)
+        if not utilities.connectionExists():
+            messageManager.sendNetworkError()
+            continue
+         # Data Collection takes time!!
+        serverBuffer = threading.Thread(None, messageManager.findConnection, args = (dataManager.lock, [], True,  ))
         dataCollector = threading.Thread(None, dataManager.getData)
         
         globals.downloadComplete = False
@@ -313,6 +394,8 @@ if __name__ == "__main__":
         repetitions += 1
         if globals.args == "fill" and repetitions > 2:
             break
+    
+    utilities.changeServerStatus("status.txt", 0)
         
        
         

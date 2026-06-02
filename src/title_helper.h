@@ -14,6 +14,8 @@ ProjectedObject createProjectedObject(float x, float y, float w, float h, bool c
 
 ProjectedObject projectRect(ProjectedObject obj, float xDifference, float yDifference);
 
-float handleXPos(float* realPOS, float* projectedPOS, float wrapPoint, float w, float* h, float rectW);
+float handleXPos(float* realPOS, float* projectedPOS, float wrapPoint, float w, float* h, float rectW, float realW);
+
+void unprojectXPOS(float* realPOS, float* projectedPOS);
 
 #endif // !TITLE_HELPER_H_

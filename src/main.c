@@ -7,11 +7,62 @@
 #include "globals.h"
 
 
+/*Taking the save data from the JSON file, writes into a global int array
+and frees the JSON version*/
+void readSaveData(char*** saveJSON, int objCount, int* entries) {
+	// Obj count will be one unless I add profiles later
+	for (int a = 0; a < objCount; a++) {
+
+		saveData = malloc(sizeof(int) * entries[a]);
+
+		if (saveData == NULL) {
+			errorExit("Malloc for save data failed");
+		}
+
+		for (int b = 0; b < entries[a]; b++) {
+			int savePoint = convertToInt(saveJSON[a][b]);
+
+			saveData[b] = savePoint;
+		}
+	}
+
+	// Don't need JSON version anymore
+	savePoints = entries[0];
+	freeJSONArray(saveJSON, objCount, entries);
+}
+
+void writeSaveData(const char* fileName, const char* array) {
+	// May add more in future
+	char* entryNames[] = { "stars", "standard", "noSubs", "timer", 
+		"pointDeduct", "lessHeart", "noMil", "harshTimer" };
+
+	char*** data = malloc(sizeof(char**) * 1);
+	int* entries = malloc(sizeof(int) * 1);
+	if (data == NULL || entries == NULL) {
+		errorExit("Malloc for writing save data failed");
+	}
+
+	data[0] = malloc(sizeof(char*) * savePoints);
+	if (data[0] == NULL) {
+		errorExit("Malloc for writing save data failed");
+	}
+
+	// All save data will be written as strings
+	for (int a = 0; a < savePoints; a++) {
+		data[0][a] = converToStr(saveData[a]);
+	}
+	entries[0] = savePoints;
+	writeJSONArray(fileName, array, entryNames, data, 1, entries);
+	freeJSONArray(data, 1, entries);
+}
+
 int moreOrLess(bool more, Queue* queue, int score, int* state) {
 
-	int viewPublic = queue->front->views;
+	u_int64 viewPublic = queue->front->views;
 	YTNode* nextNode = queue->front->next;
-	int privateViews = nextNode->views;
+	u_int64 privateViews = nextNode->views;
+
+	printf("Shown Views: %llu Hidden Views: %llu\n", viewPublic, privateViews);
 	//deQueue(queue, nextNode);
 	if (more) {
 		if (privateViews >= viewPublic) {
@@ -23,6 +74,13 @@ int moreOrLess(bool more, Queue* queue, int score, int* state) {
 			// buddy won!!!
 			if (score + 1 >= WINNING_SCORE) {
 				gameAttr->state = justWon;
+				// Hardest diff in this save was just beaten, add it and document it
+				if (difficulty >= saveData[stars]) {
+					// If any difficulties are skipped, their respective star will also be added
+					saveData[stars] += (difficulty - saveData[stars] + 1);
+					saveData[difficulty + 1] = WINNING_SCORE;
+					writeSaveData("..\\assets\\data\\save.json", "save_data");
+				}
 			}
 			else {
 				gameAttr->state = moreRight;
@@ -48,6 +106,11 @@ int moreOrLess(bool more, Queue* queue, int score, int* state) {
 
 			if (gameAttr->health <= 0) {
 				gameAttr->state = justLost;
+				// Didn't win, but beat the score on this diff, document it
+				if (saveData[difficulty + 1] < score) {
+					saveData[difficulty + 1] = score;
+					writeSaveData("..\\assets\\data\\save.json", "save_data");
+				}
 			}
 
 			// Can't have negative score.
@@ -78,6 +141,13 @@ int moreOrLess(bool more, Queue* queue, int score, int* state) {
 
 			if (score + 1 >= WINNING_SCORE) {
 				gameAttr->state = justWon;
+				// Hardest diff in this save was just beaten, add it and document it
+				if (difficulty >= saveData[stars]) {
+					// If any difficulties are skipped, their respective star will also be added
+					saveData[stars] += (difficulty - saveData[stars] + 1);
+					saveData[difficulty + 1] = WINNING_SCORE;
+					writeSaveData("..\\assets\\data\\save.json", "save_data");
+				}
 			}
 			else {
 				gameAttr->state = lessRight;
@@ -103,6 +173,11 @@ int moreOrLess(bool more, Queue* queue, int score, int* state) {
 
 			if (gameAttr->health <= 0) {
 				gameAttr->state = justLost;
+				// Didn't win, but beat the score on this diff, document it
+				if (saveData[difficulty + 1] < score) {
+					saveData[difficulty + 1] = score;
+					writeSaveData("..\\assets\\data\\save.json", "save_data");
+				}
 			}
 
 			if (difficulty >= pointDeduct) {
@@ -185,8 +260,18 @@ void SDL_Init_All() {
 }
 
 void hideConsole() {
-	HWND consoleWindow = GetConsoleWindow();
-	ShowWindow(consoleWindow, SW_HIDE);
+	/*HWND consoleWindow = GetConsoleWindow();
+	if (!ShowWindow(consoleWindow, SW_HIDE)) {
+		fprintf(stderr, "%u\n", GetLastError());
+	}*/
+
+	/*if (!freopen("out.txt", "w", stdout)) {
+		exit(1);
+	}
+
+	if (!freopen("out.txt", "w", stderr)) {
+		exit(1);
+	}*/
 }
 
 /*Creates a  structure that keeps track of important variables
@@ -308,7 +393,7 @@ void handleMouseClick(SDL_MouseButtonEvent button, bool* aboutToQuit, int* timeC
 			gameAttr->difficulty = -1;
 			printf("It is pressed\n");
 			// Can technically be pressed when invisible, so ignore it if it is
-		} else if (isPressed(event.button, playRect) && difficulty != -1) {
+		} else if (isPressed(event.button, playRect) && difficulty != -1 && difficultyUnlocked(difficulty)) {
 			gameAttr->state = titleToNormal;
 			printf("It is pressed\n");
 		}
@@ -334,11 +419,23 @@ void handleMouseClick(SDL_MouseButtonEvent button, bool* aboutToQuit, int* timeC
 	}
 }
 
-int main() {
+
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
+	PSTR szCmdParam, int iCmdShow) {
 	// Should be off for normal behavior
-	if (DEBUG) {
+	if (!DEBUG) {
 		hideConsole();
+		printf("Console hidden\n");
 	}
+
+	hMutex = CreateMutex(NULL, false, "Local\\$myprogram$");
+
+	if (GetLastError() == ERROR_ALREADY_EXISTS) {
+		return 0;
+	}
+
+	printf("Doesn't exist\n");
+
 	SDL_Init_All();
 	createFontArray();
 	bool gameRunning = true;
@@ -346,6 +443,9 @@ int main() {
 	bool aboutToQuit = false;
 
 	bool fullScreen = FULLSCREEN;
+
+	offlineVideos = readAndSplit("..\\assets\\data\\offline_storage.txt", '\n', &offlineVideoCount);
+
 	startServer();
 	requester =  establishConnection();
 	ytQueue = createQueue();
@@ -382,8 +482,11 @@ int main() {
 		return -1;
 	}
 
+	int objs;
+	int* entries;
 
-	/*offlineVideos = readAndSplit("..\\assets\\data\\offline_storage.txt", '\n', &offlineVideoCount);*/
+	char*** saveJSON = readJSONArray("..\\assets\\data\\save.json", "save_data", &objs, &entries);
+	readSaveData(saveJSON, objs, entries);
 
 	clock_t timeClocked = clock();
 	clock_t cooldown = clock();
@@ -397,6 +500,8 @@ int main() {
 	// First Bit: W is allowed; Second Bit: S is allowed;
 	// Added as need be.
 	int keysAllowed = 7;
+
+
 	while (gameRunning) {
 
 		// DON'T PUT NON EVENT SHIT INSIDE EVENT LOOP
@@ -408,7 +513,12 @@ int main() {
 
 		while (SDL_PollEvent(&event)) {
 			if (event.type == SDL_EVENT_QUIT) {
-				gameRunning = false;
+				gameAttr->state = shutDown;
+				aboutToQuit = true;
+				if (difficulty == saveData[stars] && saveData[highScore] < gameAttr->score) {
+					saveData[highScore] = gameAttr->score;
+					writeSaveData("..\\assets\\data\\save.json", "save_data");
+				}
 				break;
 			}
 			// Key is the code of the key press within the key struct
@@ -420,6 +530,10 @@ int main() {
 					// States where the game is business as usual
 					if (gameAttr->state >= normal && gameAttr->state <= gameWon) {
 						gameAttr->state = justQuit;
+						if (saveData[difficulty + 1] < gameAttr->score) {
+							saveData[difficulty + 1] = gameAttr->score;
+							writeSaveData("..\\assets\\data\\save.json", "save_data");
+						}
 					}
 					else if (gameAttr->state == title || gameAttr->state == titleDiff) {
 						gameAttr->state = shutDown;
@@ -536,7 +650,7 @@ int main() {
 			}
 		}
 		
-		gameAttr->state = draw(moreText, lessText, ytQueue);
+		gameAttr->state = draw(moreText, lessText, ytQueue, &counter);
 
 		clock_t finishTime = clock();
 		// Enforce the FPS

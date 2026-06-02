@@ -158,7 +158,6 @@ TTF_Text** wrapText(TTF_Text* msg, float containerW, int* count) {
 			int newLen = 0;
 			char* msgPart = join(splitMsg, lastIndex, a - 1, " ", &newLen);
 			
-			printf("Passed font size: %f\n", TTF_GetFontSize(font));
 			textLines[(*count)] = TTF_CreateText(textEngine, font, msgPart, strlen(msgPart));
 			(*count)++;
 			

@@ -2,6 +2,11 @@
 
 zsock_t* establishConnection() {
 	zsock_t* requester = zsock_new(ZMQ_REQ);
+
+
+	zsock_set_rcvtimeo(requester, 5000);
+
+
 	if (zsock_connect(requester, "tcp://localhost:5555")) {
 		fprintf(stderr, "%s\n", "Connection failed");
 		SDL_DestroySurface(screen->surface);
@@ -13,13 +18,25 @@ zsock_t* establishConnection() {
 		exit(1);
 	}
 
-	zstr_send(requester, "Roger");
+
+	printf("Set time out\n");
+	zstr_send(requester, "CONNECTION");
+	char* response = zstr_recv(requester);
+	printf("%s\n", response);
+
+	if (response != NULL) {
+		zstr_send(requester, "CONNECTION_FULL");
+		connected = true;
+		zstr_free(&response);
+	}
+
+	printf("Message sent\n");
 	return requester;
 }
 
 /*With the data grabbed from the backend/offline, will add every datapoint which partains to each
 video. This includes: View Count (int and char*), file name, and sub counts */
-void storeYTData(Queue* queue, char* sData, int data, char* file_name, char* subCount) {
+void storeYTData(Queue* queue, char* sData, u_int64 data, char* file_name, char* subCount) {
 	YTNode* dataNode = malloc(sizeof(YTNode));
 	if (dataNode == NULL) {
 		quit(queue);
@@ -35,8 +52,7 @@ void storeYTData(Queue* queue, char* sData, int data, char* file_name, char* sub
 		queue->back = dataNode;
 	}
 
-	queue->size++;
-	dataNode->views = data;
+	dataNode->views = (float)data;
 	dataNode->filePath = malloc(sizeof(char) * strlen(file_name) + 1);
 	if (dataNode->filePath == NULL) {
 		quit(queue);
@@ -72,6 +88,8 @@ void storeYTData(Queue* queue, char* sData, int data, char* file_name, char* sub
 
 	dataNode->img = SDL_CreateTextureFromSurface(renderer, surf);
 	SDL_DestroySurface(surf);
+
+	queue->size++;
 	//printf("%s\n", dataNode->filePath);
 	//printf("%s\n", dataNode->sViews);
 	dataNode->next = NULL;
@@ -86,6 +104,7 @@ void storeYTData(Queue* queue, char* sData, int data, char* file_name, char* sub
 /*When the server goes offline or is busy, this handles all the parts 
 which are different when the server isn't involved*/
 void storeYTDataOffline(Queue* queue, char* filePath, int count) {
+	printf("%s\n", "Using offline data");
 	char** chosenVideos = malloc(sizeof(char*) * count);
 	if (chosenVideos == NULL) {
 		fprintf(stderr, "%s\n", "No storage for the videos :(");
@@ -139,7 +158,7 @@ void storeYTDataOffline(Queue* queue, char* filePath, int count) {
 			free(dataPoint[a]);
 		}
 
-		int views = convertToInt(sViews);
+		u_int64 views = convertToInt(sViews);
 
 		/*printf("Subs: %s\n", subs);
 		printf("Views: %s\n", sViews);
@@ -162,10 +181,30 @@ requests for more. If the server is busy or offline, we use
 data that is readily avaliable. Otherwise, data from the
 SQL db and stuff from the Google API is used*/
 bool getYtData(zsock_t* connection, Queue* queue) {
+	printf("Trying to get data\n");
 	char* data = zstr_recv(connection);
+	printf("Passed timeout\n");
+	printf("%s\n", data);
+	if (data == NULL) {
+		offline = true;
+		zsock_set_rcvtimeo(requester, 100);
+		storeYTDataOffline(queue, "..\\assets\\data\\offline_storage.txt", 20);
+		return true;
+	}
+
+	// Handles first rcv timeout but second didn't
+	if (!connected) {
+		connected = true;
+		zstr_send(connection, "CONNECTION_FULL");
+		zstr_free(&data);
+		data = zstr_recv(connection);
+	}
 
 	// Server is busy getting data, so we need to use offline data
 	if (strcmp(data, "NOT_READY") == 0) {
+		connected = true;
+		offline = true;
+		zstr_free(&data);
 		printf("%s\n", "System works?");
 		storeYTDataOffline(queue, "..\\assets\\data\\offline_storage.txt", 20);
 		return true;
@@ -173,10 +212,18 @@ bool getYtData(zsock_t* connection, Queue* queue) {
 
 	// Server is offline, so we need to use offline data
 	if (strcmp(data, "LOST") == 0) {
+		connected = true;
+		offline = true;
+		zstr_free(&data);
 		fprintf(stderr, "%s\n", "CONNECTION LOST");
 		storeYTDataOffline(queue, "..\\assets\\data\\offline_storage.txt", 20);
 		return true;
 	}
+
+	int count = 0;
+	offline = false;
+	connected = true;
+
 
 	while (strcmp(data, "-1") != 0) {
 		int intData = convertToInt(data);
@@ -186,9 +233,17 @@ bool getYtData(zsock_t* connection, Queue* queue) {
 		char* subCount = zstr_recv(connection);
 		storeYTData(queue, data, intData, fileName, subCount);
 		zstr_send(connection, "Roger");
+		zstr_free(&data);
 		zstr_free(&fileName);
 		zstr_free(&subCount);
 		data = zstr_recv(connection);
+		count++;
+	}
+
+	// The amount we got from server is too low 
+	if (count <= MAX_SWAP_TO_OFFLINE) {
+		fprintf(stderr, "%s\n", "Video coun sent by server was very low...");
+		storeYTDataOffline(queue, "..\\assets\\data\\offline_storage.txt", 20 - count);
 	}
 
 	YTNode* current = queue->front;
@@ -200,15 +255,40 @@ bool getYtData(zsock_t* connection, Queue* queue) {
 }
 
 void startServer() {
+	connected = false;
 	char path[] = "..\\server";
+
+	char buffer[MAX_PATH];
+	char parameter[MAX_PATH];
+	if (getcwd(buffer, MAX_PATH) == NULL) {
+		fprintf(stderr, "%s\n", "Failed to get current working directory");
+		exit(1);
+	}
+
+	// Ensure path is intepreted as one parameter
+	strcpy(parameter, "\"");
+	strcat(parameter, buffer);
+	strcat(parameter, "\"");
+
+	char* sysCommand;
+
+	if (PYTHON_MODE) {
+		sysCommand = properConcat("..\\server\\server.py", "");
+	} else {
+		sysCommand = properConcat("..\\server\\server.exe", "");
+	}
 
 	if (access(path, 0) == 0) {
 		// Starts the database
-		system("start python.exe ..\\server\\main.py");
-		system("cls");
+		//system(sysCommand);
+		ShellExecuteA(NULL, "open", "..\\server\\server.exe", parameter, NULL, SW_HIDE);
+		//system("cls");
 	}
 	else {
 		printf("%s\n", "Start up Failed");
 		exit(1);
 	}
+	free(sysCommand);
+
+	printf("The cwd: %s\n", buffer);
 }

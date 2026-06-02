@@ -1,7 +1,7 @@
 #ifndef CONFIG_H_
 #define CONFIG_H_
 #include "commons.h"
-#include "globals.h"
+
 
 
 #define FULLSCREEN 1
@@ -10,7 +10,7 @@
 #define RSEED time(NULL)
 
 // Turns ons all debug features. OFF for release.
-#define DEBUG 1
+#define DEBUG 0
 
 #define FRAME_RATE 60
 
@@ -84,6 +84,17 @@
 // This helps keep the zoom effect the same (like 3.02 rn) across different screen sizes
 #define THIS_IS_A_CERTIFIED_CLASSIC 3827.39f
 
+// Unlocks occur after beating easist difficulty
+#define FIRST_UNLOCK 1
+
+// Unlocks occur after beating first timer difficulty
+#define SECOND_UNLOCK 3
+
+// The max number of entries where the game decides to take from offline data
+#define MAX_SWAP_TO_OFFLINE 5
+
+// Where it should run python script or executable
+#define PYTHON_MODE 0
 
 #endif // !CONFIG_H_
 

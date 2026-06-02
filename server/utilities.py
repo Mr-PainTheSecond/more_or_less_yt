@@ -1,5 +1,8 @@
-import os
+import sys
 import globals
+import requests
+import time
+import psutil
 import json
 from rich import print
 import random
@@ -54,6 +57,48 @@ def randNoDupe(minInt, maxInt, used):
     
     return randNum
     
+"""Changes the server's status, one indicating it is 
+being used, zero meaning it is not being used"""
+def changeServerStatus(fileName, newStatus):
+    with open(fileName, "w") as file:
+        file.write(str(newStatus))
+
+"""If the server is currently being used, it will wait
+until it stops being used. Timeout specifies how much will
+be waited before status is changed, maxTimeOuts makes sure
+that it isn't stuck in here just in case something went wrong"""
+def awaitServer(fileName: str, timeout: float, maxTimeOuts: int):
+    serverUsed = True
+    timeOutCount = 0
+    while serverUsed:
+        try:
+            with open(fileName, "r") as file:
+                status = int(file.read())
+                if (status == 0):
+                    serverUsed = False
+                else:
+                    globals.hadTimeOut = True
+                    time.sleep(timeout)
+                    timeOutCount += 1
+                    if timeOutCount >= maxTimeOuts:
+                        currentPrograms = psutil.process_iter()
+                        instanceCount = len([p.name() for p in currentPrograms if p.name() == "server.exe"])
+                        frontEnd = [p.name() for p in currentPrograms if p.name() == "more_or_less_yt.exe"]
+                        # We can continue if this is the only server and the frontEnd needs us
+                        if (instanceCount <= 2) and frontEnd:
+                            serverUsed = False
+                        # The server status got messed up somehow
+                        elif (instanceCount <= 2):
+                            changeServerStatus(fileName, 0)
+                            sys.exit(0)
+                        # The game is just running
+                        else:
+                            sys.exit(0)
+        # If the file doesn't exist, we can just make it and ignore this step
+        except FileNotFoundError:
+            break
+    
+    changeServerStatus(fileName, 1)
 
 def deleteEntry(file, views):
     text = None
@@ -64,13 +109,13 @@ def deleteEntry(file, views):
     with open(file, "w") as data:
         data.write(text)
 
-def realIndex(text: dict | str, fromJson = True):
+def realIndex(text: dict[str, str] | str, fromJson = True):
 
 
     rIndex: str = ""
     try:
         if fromJson: 
-            rIndex= text["file_name"]
+            rIndex= str(text["file_name"]) # type: ignore
         else:
             rIndex = str(text)
     except IndexError:
@@ -96,6 +141,17 @@ def documentCurrentEntries(file_name: str):
             print(realIndex(entries))
             globals.indexInJson[realIndex(entries)] = True
 
+"""Pings Google to check whether the user has internet connection"""
+def connectionExists():
+    timeout = 1
+    
+    try:
+        requests.head("http://www.google.com/", timeout=timeout)
+        
+        return True
+    except requests.ConnectionError:
+        
+        return False
 
 def getStorageData(file, illegalIndexes = []):
     allData = {"file": [], "views": [], "subs": []}

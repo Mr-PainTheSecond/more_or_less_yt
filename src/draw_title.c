@@ -8,7 +8,8 @@ game.*/
 int drawTitle(int state) {
 	static SDL_Texture** pfpImgs = NULL;
 	static SDL_Texture** thumbnailImgs = NULL;
-	static SDL_Texture* difficultyImgs[DIFFICULTY_COUNT];
+	static SDL_Texture* starImg = NULL;
+	static SDL_Texture* difficultyImgs[DIFFICULTY_COUNT + 1];
 
 	static TTF_Text* startTxt = NULL;
 	static TTF_Text* quitTxt = NULL;
@@ -18,8 +19,8 @@ int drawTitle(int state) {
 	static TTF_Font* firstStopFont = NULL;
 
 	// Stores the explanation for each difficulty
-	static MultiLineText explanationTxt[DIFFICULTY_COUNT + 1];
-	static TTF_Text* difficultyNameTxt[DIFFICULTY_COUNT + 1];
+	static MultiLineText explanationTxt[DIFFICULTY_COUNT + 3];
+	static TTF_Text* difficultyNameTxt[DIFFICULTY_COUNT + 3];
 
 	static float xPos[2][VIDEO_COUNT];
 	static Vector2D vectorFromLogo[VIDEO_COUNT * 2];
@@ -30,6 +31,7 @@ int drawTitle(int state) {
 	SDL_Color wineColor = { 100, 27, 0, SDL_ALPHA_OPAQUE };
 	SDL_Color greenColor = { 0, 102, 27, SDL_ALPHA_OPAQUE };
 	SDL_Color orangeColor = { 238, 63, 0, SDL_ALPHA_OPAQUE };
+	SDL_Color blueColor = { 8, 39, 245, SDL_ALPHA_OPAQUE };
 	SDL_Color goldColor = { 255, 233, 0, SDL_ALPHA_OPAQUE };
 	SDL_Color whiteColor = { 255, 255, 255, SDL_ALPHA_OPAQUE };
 
@@ -43,11 +45,13 @@ int drawTitle(int state) {
 	static ProjectedObject explanationRect;
 	static ProjectedObject beginGameLogo;
 	static ProjectedObject difficultyName;
+	static ProjectedObject victoryStar;
 
 	static ProjectedObject* rectArray;
 	static ProjectedObject* pfpRects;
 	static ProjectedObject* difficultyRects;
 	static ProjectedObject* buttonDifficulty;
+	static ProjectedObject* starRects;
 
 	static char** thumbnailFiles;
 	float movePOS[] = { screen->w * 2, screen->h / 2 };
@@ -161,16 +165,19 @@ int drawTitle(int state) {
 			SDL_DestroySurface(thumbnails[a]);
 		}
 
-		char** diffLocations = malloc(sizeof(char*) * DIFFICULTY_COUNT);
+		// lil stars sparkle
+		SDL_Surface* starSurf = IMG_Load("..\\assets\\images\\perm\\other\\star.PNG");
+		starImg = SDL_CreateTextureFromSurface(renderer, starSurf);
+		SDL_DestroySurface(starSurf);
+
+		char** diffLocations = malloc(sizeof(char*) * (DIFFICULTY_COUNT + 1));
 
 		int objs;
 		int* items;
 
 
-		for (int a = 0; a < DIFFICULTY_COUNT; a++) {
+		for (int a = 0; a < DIFFICULTY_COUNT + 1; a++) {
 			// One for the digit, one for the null terminator
-			diffLocations[a] = malloc(sizeof(char) * (strlen("..\\assets\\images\\perm\\other\\difficulty_.PNG")) + (sizeof(char) * 2));
-
 			diffLocations[a] = converToStr(a);
 		}
 
@@ -180,10 +187,10 @@ int drawTitle(int state) {
 			exit(1);
 		}
 		// All the difficulty imgs follow same format
-		formatAsFileLocation("..\\assets\\images\\perm\\other\\difficulty_", ".PNG", diffLocations, DIFFICULTY_COUNT);
+		formatAsFileLocation("..\\assets\\images\\perm\\other\\difficulty_", ".PNG", diffLocations, DIFFICULTY_COUNT + 1);
 
 
-		for (int a = 0; a < DIFFICULTY_COUNT; a++) {
+		for (int a = 0; a < DIFFICULTY_COUNT + 1; a++) {
 			SDL_Surface* diffSurf = IMG_Load(diffLocations[a]);
 			
 			difficultyImgs[a] = SDL_CreateTextureFromSurface(renderer, diffSurf);
@@ -215,13 +222,17 @@ int drawTitle(int state) {
 
 		difficultyRects = malloc(sizeof(ProjectedObject) * selectScreenRects);
 		buttonDifficulty = malloc(sizeof(ProjectedObject) * selectScreenRects);
+		starRects = malloc(sizeof(ProjectedObject) * DIFFICULTY_COUNT);
 
-		if (difficultyRects == NULL || buttonDifficulty == NULL) {
+		if (difficultyRects == NULL || buttonDifficulty == NULL || starRects == NULL) {
 			fprintf(stderr, "%s\n", "Allocation for difficulties failed");
 			quit(ytQueue);
 			exit(1);
 		}
 
+		for (int a = 0; a < DIFFICULTY_COUNT; a++) {
+			starRects[a] = createProjectedObject(w * 23 / 24, h * 15 / 16 - (h / 12 * a), h / 12, h / 12, true);
+		}
 
 		// Good way to signal that they are not initialized
 		xPos[0][0] = INT_MAX;
@@ -235,7 +246,7 @@ int drawTitle(int state) {
 		float rectW = w / 4;
 		float rectH = rectW * 9 / 16;
 
-		w = handleXPos(xPos[0], xPos[1], screenWrap, w, &h, rectW);
+		w = handleXPos(xPos[0], xPos[1], screenWrap, w, &h, rectW, rectW);
 
 		// These are thumbnails/video floating around
 		for (int a = 0; a < VIDEO_COUNT; a++) {
@@ -275,9 +286,13 @@ int drawTitle(int state) {
 		//printf("%f %f\n", expX, expY);
 		explanationRect = createProjectedObject(expX, expY, (w / 4) * firstStopRatio, h * 3 / 4 * firstStopRatio, true);
 
-		float beginX = explanationRect.realRect.x +  ((w / 8  + (width / 4)) / firstStopRatio);
-		float beginY = explanationRect.realRect.y + (explanationRect.realRect.h) + (h / 16);
-		beginGameLogo = createProjectedObject(beginX, beginY, width / 2, height / 2, false);
+		float beginX = explanationRect.realRect.x +  ((w / 6) / firstStopRatio);
+		float beginY = explanationRect.realRect.y + (explanationRect.realRect.h) + (h / 12);
+		beginGameLogo = createProjectedObject(beginX, beginY, width * 3 / 4, height * 3 / 4, false);
+
+		float starX = (beginX + (width * 3 / 4 / firstStopRatio)) + (w / 16 / firstStopRatio);
+		float starY = beginY + (height * 3 / 8 / firstStopRatio);
+		victoryStar = createProjectedObject(starX, starY, h / 12 * firstStopRatio, h / 12 * firstStopRatio, false);
 
 		char*** jsonData = readJSONArray("..\\assets\\data\\description.json", "descriptions", &objs, &items);
 
@@ -286,12 +301,12 @@ int drawTitle(int state) {
 		int titleLocation = 1;
 		int lineCountLocation = 2;
 
-		TTF_Font** newFonts = malloc(sizeof(TTF_Font*) * (DIFFICULTY_COUNT + 1));
+		TTF_Font** newFonts = malloc(sizeof(TTF_Font*) * (objs));
 		if (newFonts == NULL) {
 			errorExit("Allocation for the new fonts failed");
 		}
 
-		for (int a = 0; a <= DIFFICULTY_COUNT; a++) {
+		for (int a = 0; a < objs; a++) {
 			char* diffName = jsonData[a][titleLocation];
 			int lineCount = convertToInt(jsonData[a][lineCountLocation]);
 			// JSON is formatted as lines -> first -> hasFont
@@ -301,7 +316,6 @@ int drawTitle(int state) {
 				char* fontLocation = jsonData[a][lineCountLocation + 3 + lineCount];
 				// Some fonts need to be made bigger, while others smaller
 				float scaleFactor = convertToFloat(jsonData[a][lineCountLocation + 7 + lineCount]);
-				printf("Index %d Font location %s\n", a, fontLocation);
 				newFonts[a] = createFont(fontLocation, TTF_GetFontSize(firstStopFont) * scaleFactor);
 			}
 			else {
@@ -334,12 +348,16 @@ int drawTitle(int state) {
 		// Also gotta undo real movements for these ones
 		explanationRect.realRect.y += expOffset / 2;
 		beginGameLogo.realRect.y += expOffset / 2;
+		victoryStar.realRect.y += expOffset / 2;
 		difficultyName.realRect.y -= expOffset;
 
 		// Important: Undo real movement first then unproject (can't do other way around)
 		explanationRect = unprojectObject(explanationRect);
 		beginGameLogo = unprojectObject(beginGameLogo);
 		difficultyName = unprojectObject(difficultyName);
+		victoryStar = unprojectObject(victoryStar);
+
+		// Unproject every element in the arrays
 
 		// The rare i lol
 		for (int i = 0; i < VIDEO_COUNT; i++) {
@@ -352,13 +370,19 @@ int drawTitle(int state) {
 			buttonDifficulty[i] = unprojectObject(buttonDifficulty[i]);
 		}
 
-		for (int a = 0; a < selectScreenRects; a++) {
+		for (int a = 0; a < DIFFICULTY_COUNT; a++) {
+			starRects[a] = unprojectObject(starRects[a]);
+		}
+
+		for (int a = 0; a < selectScreenRects + 2; a++) {
 			for (int b = 0; b < explanationTxt[a].lineCount; b++) {
 				// Similar to explanationRect
 				explanationTxt[a].lineRects[b].realRect.y += expOffset / 2;
 				explanationTxt[a].lineRects[b] = unprojectObject(explanationTxt[a].lineRects[b]);
 			}
 		}
+
+		unprojectXPOS(xPos[0], xPos[1]);
 
 		isDiff = false;
 		screenWrap = firstStopDistanceX;
@@ -447,11 +471,13 @@ int drawTitle(int state) {
 		if (!isDiff) {
 			explanationRect.realRect.y -= expOffset / frames / 2;
 			beginGameLogo.realRect.y -= expOffset / frames / 2;
+			victoryStar.realRect.y -= expOffset / frames / 2;
 			difficultyName.realRect.y += expOffset / frames;
 		}
 		else {
 			explanationRect.realRect.y += expOffset / frames / 2;
 			beginGameLogo.realRect.y += expOffset / frames / 2;
+			victoryStar.realRect.y += expOffset / frames / 2;
 			difficultyName.realRect.y -= expOffset / frames;
 		}
 
@@ -460,10 +486,12 @@ int drawTitle(int state) {
 		explanationRect = projectRect(explanationRect, xDifference, yDifference);
 		beginGameLogo = projectRect(beginGameLogo, xDifference, yDifference);
 		difficultyName = projectRect(difficultyName, xDifference, yDifference);
+		victoryStar = projectRect(victoryStar, xDifference, yDifference);
 		/*zoomOutTxt(changingSmallFont, logoRect.realRect.x, logoRect.projectedRect.x + xDifference);*/
 
 
-		screenWrap += xDifference;
+		screenWrap -= xDifference;
+		printf("%f\n", screenWrap);
 		count++;
 	}
 	else {
@@ -479,13 +507,16 @@ int drawTitle(int state) {
 		count = 0;
 	}
 
-
+	static float realW = 0;
+	static float realH = 0;
 	static float rectW = 0;
 	static float rectH = 0;
 
 	if (rectW == 0) {
 		rectW = w / 4;
 		rectH = rectW * 9 / 16;
+		realW = rectW;
+		realH = rectH;
 	}
 	else {
 		rectW = rectArray[0].projectedRect.w;
@@ -493,12 +524,12 @@ int drawTitle(int state) {
 		/*printf("%f %f %f\n", logoRect.realRect.w / logoRect.projectedRect.w, logoRect.projectedRect.x - logoRect.realRect.x, logoRect.projectedRect.y - logoRect.realRect.y);*/
 	}
 
-	w = handleXPos(xPos[0], xPos[1], screenWrap, w, &h, rectW);
+	w = handleXPos(xPos[0], xPos[1], screenWrap, w, &h, rectW, realW);
 
 	int haltCond;
 	// If transition, difficulty assets are also affected, if not only videos matter
 	if (state == titleAni) {
-		haltCond = max(VIDEO_COUNT, selectScreenRects);
+		haltCond = max(VIDEO_COUNT, selectScreenRects + 2);
 	}
 	else {
 		haltCond = VIDEO_COUNT;
@@ -521,7 +552,7 @@ int drawTitle(int state) {
 				pfpRects[a] = projectRect(pfpRects[a], xDifference, yDifference);
 			}
 			
-			if (a < selectScreenRects) {
+			if (a < selectScreenRects + 2) {
 				for (int b = 0; b < explanationTxt[a].lineCount; b++) {
 					if (!isDiff) {
 						explanationTxt[a].lineRects[b].realRect.y -= expOffset / frames / 2;
@@ -551,6 +582,9 @@ int drawTitle(int state) {
 		xPos[1][a] = rectArray[a].projectedRect.x;
 	}
 
+	for (int a = 0; state == titleAni && a < DIFFICULTY_COUNT; a++) {
+		starRects[a] = projectRect(starRects[a], xDifference, yDifference);
+	}
 
 	/*RENDERING*/
 
@@ -579,7 +613,13 @@ int drawTitle(int state) {
 		// Final entry is a logo 
 		if (a != selectScreenRects - 1) {
 			if (inBounds(difficultyRects[a].projectedRect)) {
-				SDL_RenderTexture(renderer, difficultyImgs[a], NULL, &(difficultyRects[a].projectedRect));	
+				if (difficultyUnlocked(a)) {
+					SDL_RenderTexture(renderer, difficultyImgs[a], NULL, &(difficultyRects[a].projectedRect));
+
+				}
+				else {
+					SDL_RenderTexture(renderer, difficultyImgs[DIFFICULTY_COUNT], NULL, &(difficultyRects[a].projectedRect));
+				}
 			}
 
 			if (inBounds(buttonDifficulty[a].projectedRect)) {
@@ -616,10 +656,26 @@ int drawTitle(int state) {
 	displayTextAsSurface(startLogo, startTxt);
 	displayTextAsSurface(quitLogo, quitTxt);
 	// Explanins how currently selected difficulty works
-	if (gameAttr->difficulty != -1 && inBounds(explanationRect.projectedRect)) {
+	if (gameAttr->difficulty != -1 && inBounds(explanationRect.projectedRect) && difficultyUnlocked(gameAttr->difficulty)) {
 		for (int a = 0; a < explanationTxt[gameAttr->difficulty].lineCount; a++) {
 			displayTextAsSurface(explanationTxt[gameAttr->difficulty].lineRects[a], explanationTxt[gameAttr->difficulty].lines[a]);
 		}
+	}
+	// Selected difficulty locked, tells user how to unlock it
+	else if (gameAttr->difficulty != -1 && inBounds(explanationRect.projectedRect)) {
+		int explanationIndex;
+		if (gameAttr->difficulty >= SECOND_UNLOCK) {
+			explanationIndex = DIFFICULTY_COUNT + 2;
+		}
+		else {
+			explanationIndex = DIFFICULTY_COUNT + 1;
+		}
+
+		printf("%d\n", explanationTxt[explanationIndex].lineCount);
+		for (int a = 0; a < explanationTxt[explanationIndex].lineCount; a++) {
+			displayTextAsSurface(explanationTxt[explanationIndex].lineRects[a], explanationTxt[explanationIndex].lines[a]);
+		}
+
 	}
 	// This prompts user to select a difficulty
 	else if (inBounds(explanationRect.projectedRect)) {
@@ -629,14 +685,28 @@ int drawTitle(int state) {
 	}
 	
 	// Can only start once difficulty selected
-	if (difficulty != -1)  {
-		drawSmoothRectagle(beginGameLogo.projectedRect, wineColor.r, wineColor.g, wineColor.b, wineColor.a, beginGameLogo.projectedRect.w / 6);
+	if (difficulty != -1 && difficultyUnlocked(difficulty))  {
+		drawSmoothRectagle(beginGameLogo.projectedRect, blueColor.r, blueColor.g, blueColor.b, blueColor.a, beginGameLogo.projectedRect.w / 6);
 		displayTextAsSurface(beginGameLogo, playTxt);
 		displayTextAsSurface(difficultyName, difficultyNameTxt[difficulty]);
+		// This specific difficulty has been beaten, so we render the star for it on the title screen
+		if (saveData[difficulty + 1] >= WINNING_SCORE) {
+			SDL_RenderTexture(renderer, starImg, NULL, &(victoryStar.projectedRect));
+		}	
 	}
 	else {
 		// Title when no difficulty selected
-		displayTextAsSurface(difficultyName, difficultyNameTxt[DIFFICULTY_COUNT]);
+		int nameIndex;
+		if (difficulty == -1) nameIndex = DIFFICULTY_COUNT;
+		else nameIndex = DIFFICULTY_COUNT + 1;
+		displayTextAsSurface(difficultyName, difficultyNameTxt[nameIndex]);
+	}
+
+	// Only render the earned stars
+	for (int a = 0; a < saveData[stars]; a++) {
+		if (inBounds(starRects[a].projectedRect)) {
+			SDL_RenderTexture(renderer, starImg, NULL, &(starRects[a].projectedRect));
+		}
 	}
 
 	// Button that takes us back to the main menu from the difficulty select

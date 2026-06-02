@@ -130,8 +130,50 @@ void moreLessTxt(TTF_Text* moreTxt, SDL_FRect moreRect, TTF_Text* lessTxt, SDL_F
 	displayText(moreRect, moreTxt, &x, &y);
 }
 
+
+void handleNoMil(Queue* queue, int* counter) {
+	if (difficulty < noMil) return;
+
+	YTNode* currentNode = queue->front;
+
+	// Dequeue current elemet if it has more than a million
+	if (currentNode->views >= 1000000) {
+		deQueue(queue, currentNode->next);
+		*counter = expandQueue(requester, queue, *counter);
+		// To see if our new element is good to go or not
+		handleNoMil(queue, counter);
+		return;
+	}
+
+	YTNode* nextNode = currentNode->next;
+
+	// Replace the immediate after next if more than a million
+	if (nextNode->views >= 1000000) {
+		currentNode->next = nextNode->next;
+		deleteNode(nextNode);
+		queue->size--;
+
+		*counter = expandQueue(requester, queue, *counter);
+		handleNoMil(queue, counter);
+		return;
+	}
+
+	YTNode* finalNode = nextNode->next;
+
+	// We have to handle third bc it is visible during the transition
+	if (finalNode->views >= 1000000) {
+		nextNode->next = finalNode->next;
+		queue->size--;
+		deleteNode(finalNode);
+
+		*counter = expandQueue(requester, queue, *counter);
+		handleNoMil(queue, counter);
+		return;
+	}
+}
+
 /*Draw the main component of the more or less game.*/
-int drawMoreOrLess(TTF_Text* moreTxt, TTF_Text* lessTxt, Queue* queue) {
+int drawMoreOrLess(TTF_Text* moreTxt, TTF_Text* lessTxt, Queue* queue, int* counter) {
 	static DynamicText* views = NULL;
 	static DynamicText* txtScore = NULL;
 	static DynamicText* mysteryText = NULL;
@@ -181,7 +223,9 @@ int drawMoreOrLess(TTF_Text* moreTxt, TTF_Text* lessTxt, Queue* queue) {
 
 			// Dequeue twice so the elements don't repeat w/ new game
 			deQueue(ytQueue, ytQueue->front->next);
+			int stupidBuffer = expandQueue(requester, ytQueue, 0);
 			deQueue(ytQueue, ytQueue->front->next);
+			stupidBuffer = expandQueue(requester, ytQueue, 0);
 
 			startingTime = clock();
 		}
@@ -266,6 +310,10 @@ int drawMoreOrLess(TTF_Text* moreTxt, TTF_Text* lessTxt, Queue* queue) {
 			time = STARTING_TIME_HARSH;
 			gameAttr->timer = STARTING_TIME_HARSH;
 		}
+
+		// Initialized before doing mil check
+		data = queue->front->views;
+		handleNoMil(ytQueue, &data);
 	}
 	
 	time = gameAttr->timer;
@@ -305,6 +353,7 @@ int drawMoreOrLess(TTF_Text* moreTxt, TTF_Text* lessTxt, Queue* queue) {
 	if (gameAttr->state == normal && delX != 0) {
 		delX = 0;
 		deQueue(queue, queue->front->next);
+		handleNoMil(queue, &data);
 	}
 
 	data = handleTextChange(views, txtScore, mysteryText, subsTxts, gameAttr->score);

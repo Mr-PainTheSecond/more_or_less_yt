@@ -3,7 +3,9 @@ serverRunning = True
 downloadComplete = True
 sentIndexes = []
 indexInJson = []
+hadTimeOut = False
 
 IMG_CAPICITY = 300  
 args = None
-typeList = ["random", "beauty", "gaming", "music"]
+typeList = ["random", "beauty", "gaming", "music", "pets", "sports", "politics", "science"]
+debugModes = ["fill", "view_test"]

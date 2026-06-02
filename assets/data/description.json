@@ -103,6 +103,24 @@
         "line_3": "DIFFICULTY",
         "first": "1",
         "new_font": "0"
+    },
+    {
+        "id": "8",
+        "title": "???",
+        "line_count": "2",
+        "line_1": "BEAT WASHED UP YOUTUBER DIFFICULTY",
+        "line_2": "TO UNLOCK THIS DIFFICULTY",
+        "first": "1",
+        "new_font": "0"
+    },
+    {
+        "id": "9",
+        "title": "???",
+        "line_count": "2",
+        "line_1": "BEAT RAID SHOW LEGENDS DIFFICULTY",
+        "line_2": "TO UNLOCK THIS DIFFICULTY",
+        "first": "1",
+        "new_font": "0"
     }
 ]   
 }

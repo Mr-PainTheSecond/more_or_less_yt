@@ -3,7 +3,7 @@
 /*Handles everything for the xPos array, which keeps track of the positions
 of the thumbnails which are all offset every frame. Will also change the width and
 height if the screen size ever changes.*/
-float handleXPos(float* realPOS, float* projectedPOS, float wrapPoint, float w, float* h, float rectW) {
+float handleXPos(float* realPOS, float* projectedPOS, float wrapPoint, float w, float* h, float rectW, float realW) {
 
 	// The screen has changed, we need to fix the positions
 	if (w != screen->w) {
@@ -44,12 +44,19 @@ float handleXPos(float* realPOS, float* projectedPOS, float wrapPoint, float w, 
 			realPOS[a] -= 4;
 			if (projectedPOS[a] + rectW < -wrapPoint) {
 				// This is the right most position the rect can be
-				realPOS[a] = -(rectW * 2) + (rectW * 2 * (VIDEO_COUNT / LEVEL_COUNT - 1));
+				realPOS[a] = -(realW * 2) + (realW * 2 * (VIDEO_COUNT / LEVEL_COUNT - 1));
+				projectedPOS[a] = -(rectW * 2) + (rectW * 2 * (VIDEO_COUNT / LEVEL_COUNT - 1));
 			}
 		}
 	}
 
 	return w;
+}
+
+void unprojectXPOS(float* realPOS, float* projectedPOS) {
+	for (int a = 0; a < VIDEO_COUNT; a++) {
+		projectedPOS[a] = realPOS[a];
+	}
 }
 
 ProjectedObject projectRect(ProjectedObject obj, float xDifference, float yDifference) {
@@ -81,6 +88,7 @@ ProjectedObject unprojectObject(ProjectedObject obj) {
 	return obj;
 }
 
+
 void createExplanationTxt(MultiLineText* explanationTxt, TTF_Font* font, char*** jsonData, int entries, SDL_FRect ref) {
 
 	// Where the line count is placed in the JSON file
@@ -105,8 +113,9 @@ void createExplanationTxt(MultiLineText* explanationTxt, TTF_Font* font, char***
 		// Need for font size
 		char* allText = join(jsonData[a], 3, 3 + jsonLines - 1, " ", &textWidth);
 		int charCount = strlen(allText);
+		int noAllConds = convertToInt(jsonData[a][lineCountIndex + 1 + jsonLines]);
 		// Every difficulty past one will say "All previous conditions apply"
-		if (a != 0 && a != DIFFICULTY_COUNT) {
+		if (noAllConds == 0) {
 			explanationTxt[a].lineCount++;
 			charCount += strlen(" All previous conditions apply");
 		}
@@ -122,10 +131,8 @@ void createExplanationTxt(MultiLineText* explanationTxt, TTF_Font* font, char***
 		// Would be 0 or negative otherwise
 		if (charCount > 696) fontFactor = 0.005f;
 		else fontFactor = 1.5f - log(1 + charCount * 0.005f) / log(logBase);
-		printf("Font Factor: %f, New Font Size: %f\n", fontFactor, TTF_GetFontSize(font) * fontFactor);
 		TTF_SetFontSize(newFonts[a], TTF_GetFontSize(font) * fontFactor);
 
-		printf("Set Font Size: %f", TTF_GetFontSize(newFonts[a]));
 		// To determine the size of a single letter
 		TTF_Text* refTxt = TTF_CreateText(textEngine, newFonts[a], "a", strlen("a"));
 		TTF_GetTextSize(refTxt, &textWidth, &textHeight);
@@ -185,7 +192,7 @@ void createExplanationTxt(MultiLineText* explanationTxt, TTF_Font* font, char***
 		}
 
 		// All condition apply msg, except for initial and easiest difficulty
-		if (a != 0 && a != DIFFICULTY_COUNT) {
+		if (noAllConds == 0) {
 			float coolerY = ref.y + (ref.h / majorLineCount) * jsonLines;
 
 			char condMsg[] = "All previous conditions apply";
